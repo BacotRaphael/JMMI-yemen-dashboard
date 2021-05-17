@@ -26,6 +26,7 @@ library(tibble)
 library(curl)
 library(sp)
 library(stringr)
+library(shinyWidgets)
 
 
 addLegend_decreasing <- function (map, position = c("topright", "bottomright", "bottomleft", 

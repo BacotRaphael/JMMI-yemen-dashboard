@@ -2,35 +2,66 @@
 # 16.05.21 
 # With food components
 
+plot_location_list <- Admin2table %>%                                                 # Define location list
+  ungroup %>%
+  select(government_name, district_name) %>%
+  arrange(government_name, district_name) %>%
+  rename(Governorate=government_name, District=district_name) %>%
+  filter(!duplicated(District))
+           
+#DROP DOWN MENU SELECTIONS 
+vars1 <- c(
+  "WASH SMEB"="WASH_SMEB",
+  "Food SMEB"="Food_SMEB",
+  "Parallel Exchange Rates"="exchange_rates",
+  "Wheat Flour" = "wheat_flour",
+  "Rice" = "rice",
+  "Dry Beans" = "beans_dry",
+  "Canned Beans" = "beans_can",
+  "Lentils" = "lentil",
+  "Vegetable Oil" = "vegetable_oil",
+  "Sugar" = "sugar",
+  "Salt" = "salt",
+  "Potato" = "potato",
+  "Onion" = "onion",
+  "Petrol" = "petrol",
+  "Diesel" = "diesel",
+  "Bottled Water"="bottled_water",
+  "Treated Water"="treated_water",
+  "Soap"="soap",
+  "Laundry Powder"="laundry_powder",
+  "Sanitary Napkins"="sanitary_napkins",
+  "Water Trucking"= "cost_cubic_meter"
+)
+
+indicator_group <- c(rep("I. Indices", 2), 
+           "II. Currencies",
+           rep("III. Fod items", 10),
+           rep("IV. Fuels", 2),
+           rep("V. Water", 2),
+           rep("VI. Non-food items", 3),
+           "V. Water")
+
+indicator_list <- data.frame(Item=names(vars1),
+                             Variable=unname(vars1),
+                             Group = indicator_group)
+
+dates <- sort(unique(Admin2table$date2))                                            # define list with date range in data
+dates_min  <- as.Date("2020-01-01")                                               # set minimum date to be displayed
+dates_max  <- max(Admin2table$date2, na.rm = T)                                     # maximum date in data
+dates_max2 <- sort(unique(Admin2table$date2), decreasing=T)[2]                      # second-latest date
+
+# dates_max_1y <- as.POSIXlt(dates_max)                                             # most recent month minus 1 year
+# dates_max_1y$year <- dates_max_1y$year-1
+# dates_max_1y <- as.Date(dates_max_1y)
+# 
+# dates_jram <- sort(unique(jram$Date))                                             # date range in JRAM data
+# dates_min_jram <- min(dates_jram)                                                 # minimum date in JRAM data
+# dates_max_jram <- max(dates_jram)                                                 # maximum date in JRAM data
+
 # UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 
 ui <- function(){
-  
-  #DROP DOWN MENU SELECTIONS 
-  vars1 <- c(
-    "WASH SMEB"="WASH_SMEB",
-    "Food SMEB"="Food_SMEB",
-    "Parallel Exchange Rates"="exchange_rates",
-    "Wheat Flour" = "wheat_flour",
-    "Rice" = "rice",
-    "Dry Beans" = "beans_dry",
-    "Canned Beans" = "beans_can",
-    "Lentils" = "lentil",
-    "Vegetable Oil" = "vegetable_oil",
-    "Sugar" = "sugar",
-    "Salt" = "salt",
-    "Potato" = "potato",
-    "Onion" = "onion",
-    "Petrol" = "petrol",
-    "Diesel" = "diesel",
-    "Bottled Water"="bottled_water",
-    "Treated Water"="treated_water",
-    "Soap"="soap",
-    "Laundry Powder"="laundry_powder",
-    "Sanitary Napkins"="sanitary_napkins",
-    "Water Trucking"= "cost_cubic_meter"
-  )
-  
   
   varsDate<- c("Months to Select" = "varDateSelect")
   
@@ -240,7 +271,86 @@ ui <- function(){
                       
                       
                       
-                      )),           
+                      )),
+             
+             #### * 6.4 Data Explorer ######################################################################
+             
+             tabPanel("Data Explorer", icon = icon("table"),
+
+                      sidebarLayout(
+                        sidebarPanel(
+
+                          # radioGroupButtons("table_aggregation",
+                          #                   label = "Aggregation level:",
+                          #                   choices = c("District", "Key Informant"),
+                          #                   selected = "District",
+                          #                   justified = TRUE
+                          # ),
+
+                          conditionalPanel(condition = TRUE,
+                                           # condition = "input.table_aggregation != 'District'",
+                                           tags$i(h6("Note: Only district-level data can be displayed in the table on the right.
+                                                            You can download data on either aggregation level by setting your desired
+                                                            parameters and clicking on the download button below.",
+                                                     style="color:red")),
+                          ),
+
+                          hr(),
+
+                          conditionalPanel(condition = TRUE,
+                                         # condition = "input.table_aggregation == 'District'",
+                                           pickerInput("table_show_vars",
+                                                       label = "Indicators:",
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list),
+                                                       selected = c("WASH SMEB", "Food SMEB", "Parallel Exchange Rates"),
+                                                       multiple = TRUE
+                                           )
+                          ),
+
+                          # conditionalPanel(condition = "input.table_aggregation == 'Key Informant'",
+                          #                  pickerInput("table_show_vars_ki",
+                          #                              label = "Indicators:",
+                          #                              choices = names(data),
+                          #                              options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                          #                              selected = names(data),
+                          #                              multiple = TRUE
+                          #                  )
+                          # ),
+
+                          pickerInput("table_district",
+                                      label = "Districts:",
+                                      choices = lapply(split(plot_location_list$District, plot_location_list$Governorate), as.list),
+                                      options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                      selected = plot_location_list$District,
+                                      multiple = TRUE
+                          ),
+
+                          sliderTextInput("table_date_select",
+                                          "Months:",
+                                          force_edges = TRUE,
+                                          choices = dates,
+                                          selected = c("2021-03-01", "2021-03-01")
+                                          # ,selected = c(dates_min, dates_max)
+                          ),
+
+                          hr(),
+
+                          actionButton("table_reset", "Reset filters"),
+
+                          downloadButton("downloadData", "Download as CSV"),
+
+                          width = 3
+                        ),
+
+                        mainPanel(
+                          DT::dataTableOutput("table", width = "100%", height = "100%"),
+                          width = 9
+                        )
+                      )
+             ),
+             
+             
              #conditionalPanel("false", icon("crosshairs")),
              #)
              tabPanel(strong("Partners"),
@@ -1257,7 +1367,64 @@ server<-function(input, output,session) {
     
   })
   
-  
+  #### Data Explorer ######################################################################
+
+  table_datasetInput1 <- reactive({
+    Admin2table %>% filter(
+      is.null(input$table_district) | district_name %in% input$table_district,
+      date2 >= input$table_date_select[1] & date2 <= input$table_date_select[2]
+    ) %>%
+      select("date2", "government_name", "district_name", input$table_show_vars)
+  })
+  # For KII data
+  # table_datasetInput2 <- reactive({
+  #   data %>% filter(
+  #     is.null(input$table_district) | district %in% input$table_district,
+  #     date >= input$table_date_select[1] & date <= input$table_date_select[2]
+  #   ) %>%
+  #     select(input$table_show_vars_ki)
+  # })
+
+  # table_datasetInput <- reactive({
+  #   if (input$table_aggregation == "District") {table_datasetInput1()} else {table_datasetInput2()}
+  # })
+
+  output$table <- renderDT({
+
+    DT::datatable(
+      table_datasetInput1(),
+      extensions = c('ColReorder'),
+      options = list(autoWidth = TRUE, dom = 't', paging = FALSE, colReorder= TRUE, fixedHeader = TRUE, scrollX = TRUE, fixedColumns = list(leftColumns = 3)),
+      rownames = FALSE,
+      style = 'bootstrap', class = 'table-condensed table-hover table-striped'
+    ) %>%
+      formatRound(
+        4:ncol(table_datasetInput1()),
+        digits = 0,
+        interval = 3,
+        mark = ",",
+        dec.mark = getOption("OutDec")
+      ) %>%
+      formatStyle(names(table_datasetInput1()), "white-space"="nowrap")
+  })
+
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("YE-JMMI-data-download-", Sys.Date(),".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(table_datasetInput1(), file, row.names = FALSE, na = "")
+    }
+  )
+
+  observe({
+    input$table_reset
+    updatePickerInput(session, "table_district", selected = plot_location_list$District)
+    updatePickerInput(session, "table_show_vars", selected = c("date2", "government_name", "district_name", "Food_SMEB", "WASH_SMEB"))
+    # updatePickerInput(session, "table_show_vars_ki", selected = names(data),)
+    updateSliderTextInput(session, "table_date_select", selected = c(dates_min, dates_max))
+  })
+
 }
 
 
