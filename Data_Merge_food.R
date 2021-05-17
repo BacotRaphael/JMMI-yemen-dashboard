@@ -377,4 +377,5 @@ write.csv(district_final_pct_change, file = "./data/district_interactive_pct_cha
 write.csv(governorate_final_pct_change, file = "./data/governorate_interactive_pct_change.csv")
 write.csv(national_final_pct_change, file = "./data/national_interactive_pct_change.csv")
 
+write.csv(data_all_JMMI, file = "./data/data_all.csv")
 

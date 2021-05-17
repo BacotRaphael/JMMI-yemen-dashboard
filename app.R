@@ -254,18 +254,16 @@ ui <- function(){
                           br(),
                           br(),
                           sliderInput("percent","Percentage change highlighted", min = 1, max = 100, value = 20, tick=F),
-                          h6("Is the percent difference desired for the benchmark"),
-                          width=2.5),
-                        
-                        mainPanel(
+                          h6("Is the percent difference desired for the benchmark")
+                          # ,width=2.5
+                          )
+                        ,mainPanel(
                           h2("Monthly SMEB Costs and Percentage Change from Standard SMEB Values"),
                           DT::dataTableOutput("table_smeb"),
                           tags$hr(),
                           h2("Monthly Cost for Other non-SMEB goods"),
                           DT::dataTableOutput("table_other")
-                          
-                          
-                        )
+                          )
                       )
                       
                       
@@ -280,15 +278,15 @@ ui <- function(){
                       sidebarLayout(
                         sidebarPanel(
 
-                          # radioGroupButtons("table_aggregation",
-                          #                   label = "Aggregation level:",
-                          #                   choices = c("District", "Key Informant"),
-                          #                   selected = "District",
-                          #                   justified = TRUE
-                          # ),
+                          radioGroupButtons("table_aggregation",
+                                            label = "Aggregation level:",
+                                            choices = c("District", "Key Informant"),
+                                            selected = "District",
+                                            justified = TRUE
+                          ),
 
-                          conditionalPanel(condition = TRUE,
-                                           # condition = "input.table_aggregation != 'District'",
+                          conditionalPanel(condition = "input.table_aggregation != 'District'",
+                                           # condition = TRUE,
                                            tags$i(h6("Note: Only district-level data can be displayed in the table on the right.
                                                             You can download data on either aggregation level by setting your desired
                                                             parameters and clicking on the download button below.",
@@ -297,8 +295,8 @@ ui <- function(){
 
                           hr(),
 
-                          conditionalPanel(condition = TRUE,
-                                         # condition = "input.table_aggregation == 'District'",
+                          conditionalPanel(condition = "input.table_aggregation == 'District'",
+                                           # condition = TRUE,
                                            pickerInput("table_show_vars",
                                                        label = "Indicators:",
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
@@ -308,15 +306,15 @@ ui <- function(){
                                            )
                           ),
 
-                          # conditionalPanel(condition = "input.table_aggregation == 'Key Informant'",
-                          #                  pickerInput("table_show_vars_ki",
-                          #                              label = "Indicators:",
-                          #                              choices = names(data),
-                          #                              options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
-                          #                              selected = names(data),
-                          #                              multiple = TRUE
-                          #                  )
-                          # ),
+                          conditionalPanel(condition = "input.table_aggregation == 'Key Informant'",
+                                           pickerInput("table_show_vars_ki",
+                                                       label = "Indicators:",
+                                                       choices = names(full_data),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = names(full_data),
+                                                       multiple = TRUE
+                                           )
+                          ),
 
                           pickerInput("table_district",
                                       label = "Districts:",
@@ -344,8 +342,8 @@ ui <- function(){
                         ),
 
                         mainPanel(
-                          DT::dataTableOutput("table", width = "100%", height = "100%"),
-                          width = 9
+                          DT::dataTableOutput("table", width = "100%", height = "100%")
+                          # ,width = 9
                         )
                       )
              ),
@@ -1206,7 +1204,6 @@ server<-function(input, output,session) {
     time<-input$months
     percent_time<- input$percent/100
     
-    
     #time<-6
     national_data_test<-nat_data()
     national_data_test<-AdminNatTable
@@ -1239,7 +1236,7 @@ server<-function(input, output,session) {
       # add_column(.,  `Variable`= c("Petrol","Diesel","Bottled water","Treated water","Soap","Laundry powder","Sanitary napkins","Water trucking","SMEB total"), .after = 1)%>%
       mutate(Variable=gsub("_"," ",str_to_title(variable)), .before=2) %>%
       dplyr::select(c(-1))%>%
-      # dplyr::filter(Variable %in% c("Soap","Laundry powder","Sanitary napkins","Water trucking","Wash smeb", "Food smeb")) %>%
+      dplyr::filter(Variable %in% c("Soap","Laundry powder","Sanitary napkins","Water trucking","Wash smeb", "Wheat flour", "Beans dry", "Vegetable oil", "Sugar", "Salt", "Food smeb")) %>%
       mutate(Variable=gsub("smeb", "SMEB", Variable))
     
     #get number of columns now we will use later in the formatting of the table
@@ -1248,7 +1245,6 @@ server<-function(input, output,session) {
     #get the column number of the percent change for future formatting
     percent_col<-time+2
     col_format_last<-time+1
-    
     
     # This is where the percentage change are calculated. It used to be calculated compared to some "standard" SMEB value, which is crap.
     # Should either compute percentage change between t and t-n for each n
@@ -1272,7 +1268,9 @@ server<-function(input, output,session) {
     #https://stackoverflow.com/questions/60659666/changing-color-for-cells-on-dt-table-in-shiny
     #https://blog.rstudio.com/2015/06/24/dt-an-r-interface-to-the-datatables-library/
     DT::datatable(national_data_pull,extensions = c('FixedColumns'), 
-                  options = list(searching = F, paging = F, scrollX=T, fixedColumns = list(leftColumns = 2, rightColumns = 0)),
+                  options = list(
+                    autoWidth=F, 
+                    searching = F, paging = F, scrollX=T, fixedColumns = list(leftColumns = 2, rightColumns = 0)),
                   rownames = F)%>%
       formatStyle(columns = 1, color = "white", backgroundColor = "grey", fontWeight = "bold")%>%
       DT::formatPercentage(columns = c(columns_of_data_begin:columns_of_data_end),2)%>%
@@ -1293,7 +1291,7 @@ server<-function(input, output,session) {
     percent_time<- input$percent/100
     
     
-    #time<-6
+    # time<-11
     national_data_test<-nat_data()
     national_data_test<-AdminNatTable
     national_data_test$date2 <- as.yearmon(national_data_test$date)
@@ -1377,24 +1375,24 @@ server<-function(input, output,session) {
       select("date2", "government_name", "district_name", input$table_show_vars)
   })
   # For KII data
-  # table_datasetInput2 <- reactive({
-  #   data %>% filter(
-  #     is.null(input$table_district) | district %in% input$table_district,
-  #     date >= input$table_date_select[1] & date <= input$table_date_select[2]
-  #   ) %>%
-  #     select(input$table_show_vars_ki)
-  # })
-
-  # table_datasetInput <- reactive({
-  #   if (input$table_aggregation == "District") {table_datasetInput1()} else {table_datasetInput2()}
-  # })
-
+  table_datasetInput2 <- reactive({
+    full_data %>% filter(
+      is.null(input$table_district) | district_name %in% input$table_district,
+      date >= input$table_date_select[1] & date <= input$table_date_select[2]
+      ) %>%
+      select(date, government_name, district_name, input$table_show_vars_ki)
+    })
+  
+  table_datasetInput <- reactive({
+    if (input$table_aggregation == "District") {table_datasetInput1()} else {table_datasetInput2()}
+    })
+  
   output$table <- renderDT({
 
     DT::datatable(
       table_datasetInput1(),
       extensions = c('ColReorder'),
-      options = list(autoWidth = TRUE, dom = 't', paging = FALSE, colReorder= TRUE, fixedHeader = TRUE, scrollX = TRUE, fixedColumns = list(leftColumns = 3)),
+      options = list(autoWidth = FALSE, dom = 't', paging = FALSE, colReorder= TRUE, fixedHeader = TRUE, scrollX = TRUE, fixedColumns = list(leftColumns = 3)),
       rownames = FALSE,
       style = 'bootstrap', class = 'table-condensed table-hover table-striped'
     ) %>%
@@ -1413,7 +1411,7 @@ server<-function(input, output,session) {
       paste("YE-JMMI-data-download-", Sys.Date(),".csv", sep = "")
     },
     content = function(file) {
-      write.csv(table_datasetInput1(), file, row.names = FALSE, na = "")
+      write.csv(table_datasetInput(), file, row.names = FALSE, na = "")
     }
   )
 
@@ -1421,7 +1419,7 @@ server<-function(input, output,session) {
     input$table_reset
     updatePickerInput(session, "table_district", selected = plot_location_list$District)
     updatePickerInput(session, "table_show_vars", selected = c("date2", "government_name", "district_name", "Food_SMEB", "WASH_SMEB"))
-    # updatePickerInput(session, "table_show_vars_ki", selected = names(data),)
+    updatePickerInput(session, "table_show_vars_ki", selected = names(full_data),)
     updateSliderTextInput(session, "table_date_select", selected = c(dates_min, dates_max))
   })
 
