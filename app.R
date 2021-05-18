@@ -115,112 +115,222 @@ ui <- function(){
                           #          a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org"))
                       )
              ),
-             ###..................................I N F O. . P A G E ..........................................
-             tabPanel(strong("Information"),
-                      tags$head(tags$style("{ height:90vh; overflow-y: scroll; }")),
-                      
-                      icon= icon("info"), #info-circle
-                      div(#class="outer",
+             
+             #### Plot ######################################################################
+             
+             tabPanel("Price Plot",                                                                         # set panel title
+                      icon = icon("chart-line"),                                                            # select icon
+                      chooseSliderSkin(skin = "Nice", color = NULL),                                        # set theme for sliders
+                      sidebarLayout(
                         
-                        tags$head(
-                          # Include our custom CSS
-                          includeCSS("styles.css"),
-                          style=" { height:90vh; overflow-y: scroll; }
-                                              "), 
+                        sidebarPanel(
+                          
+                          tags$i(h6("Note: Reported prices are indicative only.", style="color:#045a8d")),
+                          
+                          pickerInput("plot_aggregation",
+                                      label = "Aggregation level:",
+                                      choices = c("District", "Governorate", "Country"),
+                                      selected = "Country",
+                                      multiple = FALSE
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'Country'",
+                                           radioGroupButtons("plot_type",
+                                                             label = "Plot type:",
+                                                             choices = c("Line Graph", "Boxplot"),
+                                                             selected = "Line Graph",
+                                                             justified = TRUE
+                                           )
+                          ),
+                          
+                          hr(),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'District'",
+                                           radioGroupButtons("plot_by_district_item",
+                                                             label = "Group by:",
+                                                             choices = c("Item", "District"),
+                                                             selected = "Item",
+                                                             justified = TRUE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'Governorate'",
+                                           radioGroupButtons("plot_by_governorate_item",
+                                                             label = "Group by:",
+                                                             choices = c("Item", "Governorate"),
+                                                             selected = "Item",
+                                                             justified = TRUE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'District' & input.plot_by_district_item == 'District'",
+                                           pickerInput("select_bydistrict_district",
+                                                       label = "District(s):",
+                                                       choices = lapply(split(plot_location_list$District, plot_location_list$Governorate), as.list),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = c("Al Mansura"),
+                                                       multiple = TRUE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'District' & input.plot_by_district_item == 'District'",
+                                           pickerInput("select_bydistrict_item",
+                                                       label = "Item:",   
+                                                       choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = "Food_SMEB",
+                                                       multiple = FALSE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Governorate'",
+                                           pickerInput("select_bygovernorate_governorate",
+                                                       label = "Governorate(s):",
+                                                       choices = unique(plot_location_list$Governorate),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = c("Aden"),
+                                                       multiple = TRUE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Governorate'",
+                                           pickerInput("select_bygovernorate_item",
+                                                       label = "Item:",   
+                                                       choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = "Food_SMEB",
+                                                       multiple = FALSE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'Country' | (input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Item') | (input.plot_aggregation == 'District' & input.plot_by_district_item == 'Item')",
+                                           pickerInput("select_byitem_item",
+                                                       label = "Item(s):",   
+                                                       choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = c("Food_SMEB", "WASH_SMEB"),
+                                                       multiple = TRUE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'District' & input.plot_by_district_item == 'Item'",
+                                           pickerInput("select_byitem_district",
+                                                       label = "District:",
+                                                       choices = lapply(split(plot_location_list$District, plot_location_list$Governorate), as.list),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = "Al Mansura",
+                                                       multiple = FALSE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Item'",
+                                           pickerInput("select_byitem_governorate",
+                                                       label = "Governorate:",
+                                                       choices = unique(plot_location_list$Governorate),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = "Aden",
+                                                       multiple = FALSE
+                                           )
+                          ),
+                          
+                          hr(),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation != 'Country' | (input.plot_aggregation == 'Country' & input.plot_type == 'Line Graph')",
+                                           sliderTextInput("select_date",                                                # set date slider
+                                                           "Months:",
+                                                           force_edges = TRUE,
+                                                           choices = dates,
+                                                           selected = c(dates_min, dates_max)
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'Country' & input.plot_type == 'Boxplot'",
+                                           sliderTextInput("select_date_boxplot",                                        # set date slider
+                                                           "Month:",
+                                                           force_edges = TRUE,
+                                                           choices = dates,
+                                                           selected = dates_max
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.plot_aggregation != 'Country' | (input.plot_aggregation == 'Country' & input.plot_type == 'Line Graph')",
+                                           prettySwitch(
+                                             inputId = "select_index",
+                                             label = "Index series", 
+                                             status = "success",
+                                             fill = TRUE
+                                           )
+                          ),
+                          
+                          conditionalPanel(condition = "input.select_index == true & (input.plot_aggregation != 'Country' | (input.plot_aggregation == 'Country' & input.plot_type == 'Line Graph'))",
+                                           sliderTextInput("select_date_index",
+                                                           "Reference Month:",
+                                                           force_edges = TRUE,
+                                                           choices = dates,
+                                                           selected = dates_max
+                                           ),
+                          ),
+                          
+                          h6("Select aggregation level, item(s), location(s) and month from drop-down menues to update plot.
+                                    Displayed values are median prices - retail prices are first aggregated on site level and then
+                                    on district level (and then on governorate/country level)."),
+                          
+                          absolutePanel(id = "dropdown", bottom = 20, left = 20, width = 200,                            # define blue info button
+                                        fixed=TRUE, draggable = FALSE, height = "auto",
+                                        dropdown(
+                                          h4("SMEB contents"),
+                                          # column(
+                                          #   HTML(smeb_kbl),
+                                          #   width = 6),
+                                          column(p(h6("The Survival Minimum Expenditure Basket (SMEB) represents the minimum culturally adjusted group of items
+                                                               required to support a six-person Iraqi household for one month, as defined by the CWG."))
+                                                 # ,
+                                                 # p(h6("The SMEB reported on this website only includes the food, NFI and water components. Not included are rent,
+                                                 #               electricity, communication and transportation.")),
+                                                 # p(h6("The composition of the SMEB was revised twice: 1) In the September
+                                                 #               2018 round and onwards, the current water component replaced the fuel component. 2) Since January 2020,
+                                                 #               the SMEB furthermore includes modified food and NFI components.")),
+                                                 # p(h6("More details on the SMEB can be found here:",
+                                                 #      tags$a(href="https://www.humanitarianresponse.info/en/operations/iraq/document/survival-minimum-expenditure-basket-technical-guidance-note-october-2019",
+                                                 #             "SMEB Guidance Note"), "."))
+                                                 ,
+                                                 width = 5),
+                                          width = "650px",
+                                          # tooltip = tooltipOptions(title = "Click for more details on the SMEB."),
+                                          size = "xs",
+                                          up = TRUE,
+                                          style = "jelly", icon = icon("info"),
+                                          animate = animateOptions(
+                                            enter = "fadeInLeftBig",
+                                            exit  = "fadeOutLeft",
+                                            duration = 0.5)
+                                        )
+                          ),
+                          
+                          width = 3,                                                                    # set bootstrap width of sidebar (out of 12)
+                        ),                                                                                # close sidebar panel
                         
-                        column(width=8,h3("Overview")), #h1- h5 change the header level of the text
-                        
-                        column(width=7,h5("The  Yemen  Joint  Market  Monitoring  Initiative  (JMMI) is an
-                                          initative led by REACH in collaboration with the Water, Sanitation,
-                                          and Hygiene (WASH) Cluster  and the Cash and Market Working Group (CMWG)
-                                          to support humanitarian cash actors with the harmonization of price
-                                          monitoring throughout Yemen. The basket of goods assessed includes eight 
-                                          non-food items (NFIs), including fuel, water and hygiene products, 
-                                          reflecting the programmatic areas of the WASH Cluster. The JMMI 
-                                          tracks all components of the WASH Survival Minimum Expenditure Basket 
-                                          (SMEB) since September 2018.")),
-                        
-                        column(width=8,h3("Methodology")), #h1- h5 change the header level of the text
-                        
-                        column(width=7,h5("Data was collected through interviews with vendor Key Informants 
-                                          (KIs), selected by partner organizations from markets of various sizes 
-                                          in both urban and rural areas. To be assessed by the JMMI, markets 
-                                          must be either a single permanent market, or a local community where 
-                                          multiple commercial areas are located in close proximity to one another. 
-                                          When possible, markets/shops are selected within a single geographical 
-                                          location, where there is at least one wholesaler operating in the 
-                                          market, or multiple areas of commerce within the same geographical 
-                                          location when it is too small, to provide a minimum of three price 
-                                          quotations per assessed item.", tags$i(tags$strong("Findings are indicative for the assessed 
-                                          locations and timeframe in which the data was collected.")))),
-                        
-                        column(width=8,h3("SMEB Calculation")), #h1- h5 change the header level of the text
-                        
-                        column(width=7,h5("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item from the same market in each district. 
-                                          REACH calculates the WASH SMEB,
-                                          which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (20 units) ,and Water Trucking (3.15 m3).",
-                                          p(),
-                                          p("The calculation of the aggregated median price for districts and governorates is done following a stepped approach. 
-                                          Firstly, the median of all the price quotations related to the same market is taken. Secondly, the median quotation from each market is aggregated to calculate the district median. 
-                                          Finally, the median quotation from each district is aggregated to calculate the governorate median. "))),
-                        
-                        
-                        column(width=8,h3("About REACH")), #h1- h5 change the header level of the text
-                        
-                        column(width=7,h5("REACH is a joint initiative that facilitates the development of 
-                                          information tools and products that enhance the capacity of aid actors 
-                                          to make evidence-based decisions in emergency, recovery and development 
-                                          contexts. By doing so, REACH contributes to ensuring that communities 
-                                          affected by emergencies receive the support they need. All REACH 
-                                          activities are conducted in support to and within the framework of 
-                                          inter-agency aid coordination  mechanisms. For more information, please 
-                                          visit our",a("REACH Website", target="_blank",    href="https://www.reach-initiative.org"), "or contact us directly 
-                                          at yemen@reach-initiative.org.")),
-                        
-                        hr(),
-                        p(),
-                        p(),
-                        hr(),
-                        
-                        tags$div(id="cite4",
-                                 a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org")))
+                        mainPanel(
+                          br(),
+                          tags$i(textOutput("plot_text"), style = "color: red"),                        # display error message displayed if there is no data available
+                          highchartOutput("graph", width = "100%", height = "600px"),                   # display large chart
+                          width = 8,                                                                    # set width of main panel (out of 12, as per bootstrap logic)
+                          
+                          conditionalPanel(condition = "input.plot_aggregation == 'Country' & input.plot_type == 'Boxplot'",
+                                           tags$i(h6("The boxplots are built with district medians and illustrate the variation of prices across the country.", style="color:#045a8d; text-align:center"))
+                          )
+                        )
+                      )
              ),
              
-             tabPanel(strong("SMEB Tracker"),
-                      
-                      
-                      style=("{overflow-y:auto; }"), 
-                      icon= icon("bar-chart"), #info-circle
-                      div(tags$head(
-                        # Include our custom CSS
-                        tags$style(".fa-check {color:#008000}"),
-                        tags$style(HTML(".sidebar {height:50vh; overflow-y:auto; }"))
-                      ),
-                      sidebarLayout(
-                        sidebarPanel(
-                          sliderInput("months","Number of months displayed", min = 1, max = 24, step = 1,value = 6, ticks = F),
-                          h6("Displays the number of months from the most recent dataset"),
-                          br(),
-                          br(),
-                          sliderInput("percent","Percentage change highlighted", min = 1, max = 100, value = 20, tick=F),
-                          h6("Is the percent difference desired for the benchmark")
-                          # ,width=2.5
-                          )
-                        ,mainPanel(
-                          h2("Monthly SMEB Costs and Percentage Change from Standard SMEB Values"),
-                          DT::dataTableOutput("table_smeb"),
-                          tags$hr(),
-                          h2("Monthly Cost for Other non-SMEB goods"),
-                          DT::dataTableOutput("table_other")
-                          )
-                      )
-                      
-                      
-                      
-                      
-                      )),
              
-             #### Data Explorer ######################################################################
+             
+             
+             #conditionalPanel("false", icon("crosshairs")),
+             #)
+             
+             
+             #### Data Explorer Page ######################################################################
              
              tabPanel("Data Explorer", icon = icon("table"),
 
@@ -298,8 +408,115 @@ ui <- function(){
              ),
              
              
-             #conditionalPanel("false", icon("crosshairs")),
-             #)
+             tabPanel(strong("SMEB Tracker"),
+                      
+                      
+                      style=("{overflow-y:auto; }"), 
+                      icon= icon("bar-chart"), #info-circle
+                      div(tags$head(
+                        # Include our custom CSS
+                        tags$style(".fa-check {color:#008000}"),
+                        tags$style(HTML(".sidebar {height:50vh; overflow-y:auto; }"))
+                      ),
+                      sidebarLayout(
+                        sidebarPanel(
+                          sliderInput("months","Number of months displayed", min = 1, max = 24, step = 1,value = 6, ticks = F),
+                          h6("Displays the number of months from the most recent dataset"),
+                          br(),
+                          br(),
+                          sliderInput("percent","Percentage change highlighted", min = 1, max = 100, value = 20, tick=F),
+                          h6("Is the percent difference desired for the benchmark")
+                          # ,width=2.5
+                        )
+                        ,mainPanel(
+                          h2("Monthly SMEB Costs and Percentage Change from Standard SMEB Values"),
+                          DT::dataTableOutput("table_smeb"),
+                          tags$hr(),
+                          h2("Monthly Cost for Other non-SMEB goods"),
+                          DT::dataTableOutput("table_other")
+                        )
+                      )
+                      
+                      
+                      
+                      
+                      )),
+             
+             
+             ###..................................I N F O. . P A G E ..........................................
+             tabPanel(strong("Information"),
+                      tags$head(tags$style("{ height:90vh; overflow-y: scroll; }")),
+                      
+                      icon= icon("info"), #info-circle
+                      div(#class="outer",
+                        
+                        tags$head(
+                          # Include our custom CSS
+                          includeCSS("styles.css"),
+                          style=" { height:90vh; overflow-y: scroll; }
+                                              "), 
+                        
+                        column(width=8,h3("Overview")), #h1- h5 change the header level of the text
+                        
+                        column(width=7,h5("The  Yemen  Joint  Market  Monitoring  Initiative  (JMMI) is an
+                                          initative led by REACH in collaboration with the Water, Sanitation,
+                                          and Hygiene (WASH) Cluster  and the Cash and Market Working Group (CMWG)
+                                          to support humanitarian cash actors with the harmonization of price
+                                          monitoring throughout Yemen. The basket of goods assessed includes eight 
+                                          non-food items (NFIs), including fuel, water and hygiene products, 
+                                          reflecting the programmatic areas of the WASH Cluster. The JMMI 
+                                          tracks all components of the WASH Survival Minimum Expenditure Basket 
+                                          (SMEB) since September 2018.")),
+                        
+                        column(width=8,h3("Methodology")), #h1- h5 change the header level of the text
+                        
+                        column(width=7,h5("Data was collected through interviews with vendor Key Informants 
+                                          (KIs), selected by partner organizations from markets of various sizes 
+                                          in both urban and rural areas. To be assessed by the JMMI, markets 
+                                          must be either a single permanent market, or a local community where 
+                                          multiple commercial areas are located in close proximity to one another. 
+                                          When possible, markets/shops are selected within a single geographical 
+                                          location, where there is at least one wholesaler operating in the 
+                                          market, or multiple areas of commerce within the same geographical 
+                                          location when it is too small, to provide a minimum of three price 
+                                          quotations per assessed item.", tags$i(tags$strong("Findings are indicative for the assessed 
+                                          locations and timeframe in which the data was collected.")))),
+                        
+                        column(width=8,h3("SMEB Calculation")), #h1- h5 change the header level of the text
+                        
+                        column(width=7,h5("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item from the same market in each district. 
+                                          REACH calculates the WASH SMEB,
+                                          which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (20 units) ,and Water Trucking (3.15 m3).",
+                                          p(),
+                                          p("The calculation of the aggregated median price for districts and governorates is done following a stepped approach. 
+                                          Firstly, the median of all the price quotations related to the same market is taken. Secondly, the median quotation from each market is aggregated to calculate the district median. 
+                                          Finally, the median quotation from each district is aggregated to calculate the governorate median. "))),
+                        
+                        
+                        column(width=8,h3("About REACH")), #h1- h5 change the header level of the text
+                        
+                        column(width=7,h5("REACH is a joint initiative that facilitates the development of 
+                                          information tools and products that enhance the capacity of aid actors 
+                                          to make evidence-based decisions in emergency, recovery and development 
+                                          contexts. By doing so, REACH contributes to ensuring that communities 
+                                          affected by emergencies receive the support they need. All REACH 
+                                          activities are conducted in support to and within the framework of 
+                                          inter-agency aid coordination  mechanisms. For more information, please 
+                                          visit our",a("REACH Website", target="_blank",    href="https://www.reach-initiative.org"), "or contact us directly 
+                                          at yemen@reach-initiative.org.")),
+                        
+                        hr(),
+                        p(),
+                        p(),
+                        hr(),
+                        
+                        tags$div(id="cite4",
+                                 a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org")))
+             ),
+             
+             
+             #### Partners Page ######################################################################
+             
              tabPanel(strong("Partners"),
                       
                       #style=("{overflow-y:auto; }"), 
@@ -1315,6 +1532,134 @@ server<-function(input, output,session) {
     updateSliderTextInput(session, "table_date_select", selected = c(dates_min, dates_max))
   })
 
+  #### Plot ######################################################################
+  
+  plot_district_select <- reactive({
+    if (input$plot_by_district_item == "Item") {input$select_byitem_district} else {input$select_bydistrict_district}
+  })
+  
+  plot_governorate_select <- reactive({
+    if (input$plot_by_governorate_item == "Item") {input$select_byitem_governorate} else {input$select_bygovernorate_governorate}
+  })
+  
+  plot_item_select <- reactive({
+    if (input$plot_aggregation == 'Country' | (input$plot_aggregation == 'Governorate' & input$plot_by_governorate_item == 'Item') | (input$plot_aggregation == 'District' & input$plot_by_district_item == 'Item')) {input$select_byitem_item} else if (input$plot_aggregation == 'District' & input$plot_by_district_item == 'District') {input$select_bydistrict_item} else {input$select_bygovernorate_item}
+  })
+  
+  plot_datasetInput <- reactive({prices_long %>%
+      filter(
+        is.null(plot_item_select()) | Item %in% plot_item_select()
+      ) %>%
+      execute_if(input$plot_type == 'Line Graph' | input$plot_aggregation != 'Country',
+                 filter(
+                   Date >= input$select_date[1] & Date <= input$select_date[2]
+                 )
+      ) %>%
+      execute_if(input$plot_type == 'Boxplot' & input$plot_aggregation == 'Country',
+                 filter(
+                   Date == input$select_date_boxplot
+                 )
+      ) %>%
+      execute_if(input$plot_aggregation == 'District',    filter(is.null(plot_district_select()) | District %in% plot_district_select())) %>%
+      execute_if(input$plot_aggregation == 'Governorate', select(-District)) %>%
+      execute_if(input$plot_aggregation == 'Governorate', group_by(Date, Governorate, Item)) %>%
+      execute_if(input$plot_aggregation == 'Governorate', summarise_all(median, na.rm = TRUE)) %>%
+      execute_if(input$plot_aggregation == 'Governorate', filter(is.null(plot_governorate_select()) | Governorate %in% plot_governorate_select())) %>%
+      execute_if(input$plot_aggregation == 'Country'      & input$plot_type == 'Line Graph', select(-Governorate, -District)) %>%
+      execute_if(input$plot_aggregation == 'Country'      & input$plot_type == 'Line Graph', group_by(Date, Item)) %>%
+      execute_if(input$plot_aggregation == 'Country'      & input$plot_type == 'Line Graph', summarise_all(median, na.rm = TRUE)) %>%
+      execute_if(input$plot_aggregation == 'District'     & input$select_index == 'TRUE', group_by(Governorate, District, Item)) %>%
+      execute_if(input$plot_aggregation == 'Governorate'  & input$select_index == 'TRUE', group_by(Governorate, Item)) %>%
+      execute_if(input$plot_aggregation == 'Country'      & input$plot_type == 'Line Graph' & input$select_index == 'TRUE', group_by(Item)) %>%
+      execute_if((input$plot_aggregation == 'Country' & input$plot_type == 'Line Graph' | input$plot_aggregation != 'Country') & input$select_index == 'TRUE',
+                 mutate(Price = round(((Price / c(Price[Date == input$select_date_index], NA)[1])-1)*100, digits = 1))) %>%
+      filter(!is.na(Price))
+  })
+  
+  output$plot_text <- renderText({
+    if (nrow(plot_datasetInput()) == 0) {
+      "There is no data for this selection. Change the time frame or select another indicator/location."} else {""}
+  })
+  
+  output$graph <- renderHighchart({
+    
+    if (input$plot_aggregation == "Country" & input$plot_type == "Boxplot") {
+      
+      graph <- hcboxplot(x = plot_datasetInput()$Price, var = plot_datasetInput()$Item, outliers = FALSE) %>%
+        hc_chart(type = "column") %>%
+        hc_tooltip(valueSuffix = " IQD") %>%
+        hc_yAxis(min = 0, title = list(text = "Price (in IQD)")) %>%
+        hc_exporting(
+          enabled = TRUE,
+          filename = paste0("IRQ-JPMI-boxplot_export-", Sys.Date()),
+          buttons = list(
+            contextButton = list(
+              menuItems = list("downloadPNG", "downloadPDF", "downloadCSV")
+            )),
+          sourceWidth = 1000,
+          sourceHeight = 600
+        ) %>%
+        hc_plotOptions(boxplot = list(fillColor = "#e9e9e9",
+                                      lineWidth = 1,
+                                      lineColor = "#5c5c5c",
+                                      medianWidth = 2,
+                                      medianColor = "#d9230f",
+                                      stemColor = "#5c5c5c",
+                                      stemWidth = 1,
+                                      whiskerColor = "#5c5c5c",
+                                      whiskerLength = "0%",
+                                      whiskerWidth = 1
+        ),
+        series = list(dataSorting = list(enabled = TRUE, sortKey = "median"))
+        ) %>%
+        hc_tooltip(pointFormat = "Max: {point.high}<br>
+                                          Q3:\u00a0\u00a0 {point.q3}<br>
+                                          Med: {point.median}<br>
+                                          Q1:\u00a0\u00a0 {point.q1}<br>
+                                          Min:\u00a0 {point.low}<br>")
+      
+      
+    } else if (input$plot_aggregation == "Country" | (input$plot_aggregation == "District" & input$plot_by_district_item == "Item") | (input$plot_aggregation == "Governorate" & input$plot_by_governorate_item == "Item")) {
+      graph <- hchart(plot_datasetInput(), "line", hcaes(x = Date, y = Price, group = Item))
+      
+    } else if (input$plot_aggregation == "District"){
+      graph <- hchart(plot_datasetInput(), "line", hcaes(x = Date, y = Price, group = District))
+      
+    } else {
+      graph <- hchart(plot_datasetInput(), "line", hcaes(x = Date, y = Price, group = Governorate))
+    }
+    graph <- graph %>%
+      hc_xAxis(title = "") %>%
+      hc_colors(cols) %>%
+      hc_exporting(
+        enabled = TRUE,
+        filename = paste0("IRQ-JPMI-linegraph_export-", Sys.Date()),
+        buttons = list(contextButton = list(menuItems = list("downloadPNG", "downloadPDF", "downloadCSV"))),
+        sourceWidth = 1000,
+        sourceHeight = 600
+      ) %>%
+      execute_if(input$select_index == 'TRUE' & !(input$plot_type == 'Boxplot' & input$plot_aggregation == 'Country'),
+                 hc_xAxis(plotLines = list(list(label = list(text = "Ref. month", style = list(fontSize = "11px", color = "dimgrey")),
+                                                width = 1, color = "#FF0000", dashStyle = "dash",
+                                                value = datetime_to_timestamp(as.Date(input$select_date_index, tz = 'UTC')))))
+      ) %>%
+      execute_if(input$select_index == 'TRUE' & !(input$plot_type == 'Boxplot' & input$plot_aggregation == 'Country'),
+                 hc_yAxis(labels = list(format = "{value}%"), title = list(text = "% deviation from ref. month"),
+                          plotLines = list(list(width = 1, color = "#FF0000", dashStyle = "dash", value = 0, zIndex=2)))
+      ) %>%
+      execute_if(input$select_index == 'TRUE' & !(input$plot_type == 'Boxplot' & input$plot_aggregation == 'Country'),
+                 hc_tooltip(valueSuffix = "%") 
+      ) %>%
+      execute_if(input$select_index == 'FALSE',
+                 hc_tooltip(valueSuffix = " IQD") 
+      ) %>%
+      execute_if(input$select_index == 'FALSE',
+                 hc_yAxis(min = 0, title = list(text = "Price (in IQD)"))
+      )
+  })
+  
+  
+  
 }
 
 
