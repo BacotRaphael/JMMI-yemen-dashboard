@@ -2,62 +2,6 @@
 # 16.05.21 
 # With food components
 
-plot_location_list <- Admin2table %>%                                                 # Define location list
-  ungroup %>%
-  select(government_name, district_name) %>%
-  arrange(government_name, district_name) %>%
-  rename(Governorate=government_name, District=district_name) %>%
-  filter(!duplicated(District))
-           
-#DROP DOWN MENU SELECTIONS 
-vars1 <- c(
-  "WASH SMEB"="WASH_SMEB",
-  "Food SMEB"="Food_SMEB",
-  "Parallel Exchange Rates"="exchange_rates",
-  "Wheat Flour" = "wheat_flour",
-  "Rice" = "rice",
-  "Dry Beans" = "beans_dry",
-  "Canned Beans" = "beans_can",
-  "Lentils" = "lentil",
-  "Vegetable Oil" = "vegetable_oil",
-  "Sugar" = "sugar",
-  "Salt" = "salt",
-  "Potato" = "potato",
-  "Onion" = "onion",
-  "Petrol" = "petrol",
-  "Diesel" = "diesel",
-  "Bottled Water"="bottled_water",
-  "Treated Water"="treated_water",
-  "Soap"="soap",
-  "Laundry Powder"="laundry_powder",
-  "Sanitary Napkins"="sanitary_napkins",
-  "Water Trucking"= "cost_cubic_meter"
-)
-
-indicator_group <- c(rep("I. Indices", 2), 
-           "II. Currencies",
-           rep("III. Fod items", 10),
-           rep("IV. Fuels", 2),
-           rep("V. Water", 2),
-           rep("VI. Non-food items", 3),
-           "V. Water")
-
-indicator_list <- data.frame(Item=names(vars1),
-                             Variable=unname(vars1),
-                             Group = indicator_group)
-
-dates <- sort(unique(Admin2table$date2))                                            # define list with date range in data
-dates_min  <- as.Date("2020-01-01")                                               # set minimum date to be displayed
-dates_max  <- max(Admin2table$date2, na.rm = T)                                     # maximum date in data
-dates_max2 <- sort(unique(Admin2table$date2), decreasing=T)[2]                      # second-latest date
-
-# dates_max_1y <- as.POSIXlt(dates_max)                                             # most recent month minus 1 year
-# dates_max_1y$year <- dates_max_1y$year-1
-# dates_max_1y <- as.Date(dates_max_1y)
-# 
-# dates_jram <- sort(unique(jram$Date))                                             # date range in JRAM data
-# dates_min_jram <- min(dates_jram)                                                 # minimum date in JRAM data
-# dates_max_jram <- max(dates_jram)                                                 # maximum date in JRAM data
 
 # UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 
@@ -104,13 +48,15 @@ ui <- function(){
                           #SIDE PANEL
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 60, left = "auto", right = 20, bottom = 1,
-                                        width = 500, height = "auto", 
+                                        # width = 500,
+                                        width = "30%",
+                                        height = "auto", 
                                         
                                         hr(),
-                                        h5("The Yemen Joint Market Monitoring Initiative (JMMI) is a harmonized price monitoriong initiative that focuses on informing
-                                      the Water, Sanitation, and Hygiene (WASH) Cluster and the Cash 
-                                      and Market Working Group (CMWG) to support humanitarian activies throughout Yemen.  
-                                      The JMMI provides an indicative estimation of the prices of WASH and fuel items across districts in Yemen."),
+                                        # h5("The Yemen Joint Market Monitoring Initiative (JMMI) is a harmonized price monitoriong initiative that focuses on informing
+                                        # the Water, Sanitation, and Hygiene (WASH) Cluster and the Cash
+                                        # and Market Working Group (CMWG) to support humanitarian activies throughout Yemen.
+                                        # The JMMI provides an indicative estimation of the prices of WASH and fuel items across districts in Yemen."),
                                         
                                         h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
                                                   tags$strong(DistsNumb), "districts in ", tags$strong(paste0(currentD,"."))),
@@ -130,7 +76,10 @@ ui <- function(){
                                         h5(textOutput("text3")), #extra small text which had to be customized as an html output in server.r (same with text1 and text 2)
                                         
                                         #HIGH CHART
-                                        highchartOutput("hcontainer", height= 300, width = 450),
+                                        highchartOutput("hcontainer", height= 300, 
+                                                        width = "100%"
+                                                        #, width = 450
+                                                        ),
                                         
                                         #new data table 
                                         hr(),
@@ -271,7 +220,7 @@ ui <- function(){
                       
                       )),
              
-             #### * 6.4 Data Explorer ######################################################################
+             #### Data Explorer ######################################################################
              
              tabPanel("Data Explorer", icon = icon("table"),
 
@@ -758,13 +707,6 @@ server<-function(input, output,session) {
     
     map1 %>% clearControls()
     
-    map1 %>%
-      addLegend_decreasing("topleft", pal = mypal, values =  dataM@data[,6], #update legend to reflect changes in selected district/variable shown
-                           labFormat=labelFormat(suffix=unitA),
-                           title = title_legend,
-                           opacity = 5,
-                           decreasing = T)
-    
     #needed to make a custom label because i hate R shiny https://stackoverflow.com/questions/52812238/custom-legend-with-r-leaflet-circles-and-squares-in-same-plot-legends
     colors<-c("white", "#D3D3D3", "#D3D3D3")
     labels<-c("Districts with previous data", "Governorate borders", "District borders")
@@ -791,11 +733,22 @@ server<-function(input, output,session) {
       return(addLegend(map1,"topleft", colors = legend_colors, labels = legend_labels, opacity = 0.5))
     }
     
-    #add new legend
-    map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)
+    #add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
+    map1 %>% addControl(c(""), position = "topleft" ) %>% addControl(c(""), position = "topleft" ) 
     
     #add scale bar
     map1 %>% addScaleBar("topleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T))
+    
+    #add new legend
+    map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)
+    
+    #add legend for var
+    map1 %>%
+      addLegend_decreasing("topleft", pal = mypal, values =  dataM@data[,6], #update legend to reflect changes in selected district/variable shown
+                           labFormat=labelFormat(suffix=unitA),
+                           title = title_legend,
+                           opacity = 5,
+                           decreasing = T)
     
     
   })#end of MAP
@@ -1003,72 +956,9 @@ server<-function(input, output,session) {
     r
   })
   
-  chartNAME<-reactive({ #define element to be used as title for selected variable
-    if (input$variable1 == "WASH_SMEB"){
-      y="WASH SMEB"
-    }
-    if (input$variable1 == "exchange_rates"){
-      y="Parallel Exchange Rate"
-    }
-    if (input$variable1 == "petrol"){
-      y= "Petrol Price"
-    }
-    if (input$variable1 == "diesel"){
-      y= "Diesel Price"
-    }
-    if (input$variable1 == "bottled_water"){
-      y= "Bottled Water Price"
-    }
-    if (input$variable1 == "treated_water"){
-      y= "Treated Water Price"
-    }
-    if (input$variable1 == "soap"){
-      y="Soap Price"
-    }
-    if (input$variable1 == "laundry_powder"){
-      y= "Laundry Powder Price"
-    }
-    if (input$variable1 == "sanitary_napkins"){
-      y= "Sanitary Napkins Price"
-    }
-    if (input$variable1 == "cost_cubic_meter"){
-      y= "Water Trucking Price"
-    }
-    if (input$variable1 == "Food_SMEB"){
-      y= "Food SMEB price"
-    }
-    if (input$variable1 == "wheat_flour"){
-      y= "Wheat flour Price"
-    }
-    if (input$variable1 == "rice"){
-      y= "Rice Price"
-    }
-    if (input$variable1 == "dry_bean"){
-      y= "Dry beans Price"
-    }
-    if (input$variable1 == "can_bean"){
-      y= "Can beans Price"
-    }
-    if (input$variable1 == "lentil"){
-      y= "Lentils Price"
-    }
-    if (input$variable1 == "vegetable_oil"){
-      y= "Vegetable oil Price"
-    }
-    if (input$variable1 == "sugar"){
-      y= "Sugar Price"
-    }
-    if (input$variable1 == "salt"){
-      y= "Salt Price"
-    }
-    if (input$variable1 == "potato"){
-      y= "Potato Price"
-    }
-    if (input$variable1 == "onion"){
-      y= "Onion Price"
-    }
-    y
-  })
+  chartNAME<-reactive({ 
+    y = indicator_list[indicator_list$Variable==input$variable1,"Item"] %>% as.character  #define element to be used as title for selected variable
+    })
   
   #_________________________Create highcharter element which uses dataset filtered by user inputs___________________
   #NEW OUT PUT FOR DATA TO BE SUBBED LATER
@@ -1133,7 +1023,9 @@ server<-function(input, output,session) {
                           nrow=2, ncol=3, byrow = T,
                           dimnames=list(c("Median Price (YER)","Number of Markets Assessed"),c(paste0("District: \n",na.omit(unique(ChartDat_Date[,4]))),paste0("Governorate: \n",na.omit(unique(ChartDat_Date[,2]))),"Yemen")))
     
-    DT::datatable(mat_date_test,options = list(dom = 't'))
+    DT::datatable(mat_date_test,options = list(dom = 't')
+                  #, width = "100%" # test to delete
+                  )
   })
   
   
@@ -1246,8 +1138,8 @@ server<-function(input, output,session) {
     percent_col<-time+2
     col_format_last<-time+1
     
-    # This is where the percentage change are calculated. It used to be calculated compared to some "standard" SMEB value, which is crap.
-    # Should either compute percentage change between t and t-n for each n
+    # This is where the percentage change are calculated. It was  calculated compared to some "standard" SMEB value, which is weird
+    # It now computes percentage change between t and t-n for each month n
     #https://duckduckgo.com/?q=dynamic+naming+in+mutate+R&t=brave&ia=web
     national_data_pull<-national_data_pull%>%
       # dplyr::mutate_at(., .vars = c(3:ncol(.)),.funs = list(`percent change from standard SMEB`= ~((.-(national_data_pull[,2]))/(national_data_pull[,2]))))
