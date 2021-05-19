@@ -64,12 +64,31 @@ March_2021 <-read_excel("37.REACH_YEM_Dataset_Joint Market Monitoring Initiative
 list_df = setNames(lapply(ls(), function(x) get(x)), ls())
 list_df_names <- names(list_df)
 
+# Test to go consolidate historical dataset differently to keep columns that were not consistently monitored?
+harmonise.df <- function(df){
+  colnames(df) <- tolower(colnames(df))
+  colnames(df) <- gsub("_all", "", colnames(df))
+  colnames(df) <- gsub("\\.|\\_\\.", "/", colnames(df))
+  colnames(df) <- sub(".*?sell_", "sell_", colnames(df))
+  return(df)
+}
+
+# df_test <- df_mkt_functionnality
+# t<- df_test %>% harmonise.df()
+# colnames(t)
+
+list_df <- lapply(list_df, harmonise.df)
+df <- do.call("rbind.fill", list_df)                                            # Trying to rbind.fill all of dataset to keep market functionality questions
+col_mkt_functionnality <- 
+  colnames(df)[grepl("mrk|market|sell_|cash_feasibility|COVID", colnames(df))]
+df_mkt_functionnality <- df %>%
+  dplyr::select(matches("country|governorate|district|_id|code|date"), all_of(col_mkt_functionnality)) %>%
+  dplyr::select(matches("admin|_name|_id|code|date"), matches("sell_"))
+  
 ############################################################major change
 col_name_initial<-c("fuel_gov_origin","wash_gov_origin","food_gov_origin", colnames(September_2020%>% dplyr::select(starts_with('calc_price_'),contains("cost_cubic_metere"), contains("exchange_rate_result"),starts_with("governorate_"),starts_with("district_"),-contains('market'))))
 data_all_JMMI<-as_tibble(data.frame(test="TEST"))
-
 data_all_JMMI[,col_name_initial] <- NA
-
 colnames_pulled_all<-as_tibble(data.frame(JMMI="TEST"))
 
 name_object<-function(df){
@@ -100,7 +119,7 @@ col_pull<-function(df, list_of_df){
   
   df1<-df%>%
     as_tibble()%>%
-    dplyr::select(starts_with('calc_price_'),contains("cost_cubic_meter"), contains("exchange_rate_result"),starts_with("governorate_"),starts_with("district_"),starts_with("fuel_gov_origin"),starts_with("wash_gov_origin"),starts_with("food_gov_origin"))%>%
+    dplyr::select(starts_with('calc_price_'),contains("cost_cubic_meter"), contains("exchange_rate_result"),starts_with("governorate_"),starts_with("district_"),starts_with("fuel_gov_origin"),starts_with("wash_gov_origin"),starts_with("food_gov_origin"), one_of(col_mkt_functionnality))%>%
     #rename(replace=c(colnames(df)=( gsub("_normalized", "_normalised", colnames(df) ) )  ))%>%
     mutate(as_tibble(),jmmi = name)%>%
     map_if(is.factor,as.character)%>%
@@ -177,6 +196,8 @@ date_list<-sort(unique(data_all_JMMI$jmmi_date))
 #add a country ID to sort the national by (because aggregate_median needs a key column code)
 data_all_JMMI$country_id<-"YE"
 
+data_all_market_functionality <- data_all_JMMI %>%
+  dplyr::select(matches("admin|code|Code|ID|date"), one_of(col_mkt_functionnality))
 
 for(i in seq_along(date_list)){
   if (i ==1){

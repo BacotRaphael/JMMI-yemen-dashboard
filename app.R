@@ -15,8 +15,8 @@ ui <- function(){
              windowTitle = "REACH: Yemen Joint Market Monitoring Initiative (JMMI)", #Title for browser tab window
              
              ###..................................M A P. . P A G E ..........................................
-             tabPanel(strong("JMMI"), #TAB LABEL
-                      icon= icon("map-marker"), #TAB ICON
+             tabPanel(strong("Map"), #TAB LABEL
+                      icon= icon("map"), #TAB ICON
                       div(class="outer",
                           
                           tags$head(
@@ -27,7 +27,7 @@ ui <- function(){
                             br()#added
                           ),
                           
-                          #LEAFLET MAP
+                          #LEAFLET MAP     
                           # If not using custom CSS, set height of leafletOutput to a number instead of percent
                           leafletOutput("map1", width="100%", height="100%"), #BRING IN LEAFLET MAP, object created in server.R
                           tags$head(tags$style(".leaflet-control-zoom { display: none; }
@@ -1313,7 +1313,7 @@ server<-function(input, output,session) {
     time<-input$months
     percent_time<- input$percent/100
     
-    #time<-6
+    # time<-6
     national_data_test<-nat_data()
     national_data_test<-AdminNatTable
     national_data_test$date2 <- as.yearmon(national_data_test$date)
@@ -1651,10 +1651,10 @@ server<-function(input, output,session) {
                  hc_tooltip(valueSuffix = "%") 
       ) %>%
       execute_if(input$select_index == 'FALSE',
-                 hc_tooltip(valueSuffix = " IQD") 
+                 hc_tooltip(valueSuffix = " YER") 
       ) %>%
       execute_if(input$select_index == 'FALSE',
-                 hc_yAxis(min = 0, title = list(text = "Price (in IQD)"))
+                 hc_yAxis(min = 0, title = list(text = "Price (in YER)"))
       )
   })
   

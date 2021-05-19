@@ -1,4 +1,5 @@
 #GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 #install packages
 library(devtools)
@@ -352,9 +353,11 @@ vars1 <- c(
   "Water Trucking"= "cost_cubic_meter"
 )
 
+## Testing
+
 indicator_group <- c(rep("I. Indices", 2), 
                      "II. Currencies",
-                     rep("III. Fod items", 10),
+                     rep("III. Food items", 10),
                      rep("IV. Fuels", 2),
                      rep("V. Water", 2),
                      rep("VI. Non-food items", 3),
