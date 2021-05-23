@@ -23,143 +23,72 @@ setwd("./Datasets")
 
 #All data saved on the z drive
 #MAKE SURE YOU ARE PULLING THE RIGHT SHEET (DO NOT PULL THE RAW DATA SHEET)
+#Add a line to mutate a variable called jmmi with "Month_Year" inside, to streamline date (and simplify data consolidation)
 
-April_2018 <- read_excel("2.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April2018_recode_cols.xlsx",sheet = 2)
-May_2018 <- read_excel("3.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May2018_recode_cols.xlsx",sheet = 2)
-June_2018 <- read_excel("4.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June2018_recode_cols.xlsx", sheet=2)
-July_2018 <- read_excel("5.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_July2018_recode_cols.xlsx", sheet=2)
-August_2018 <-read_excel("6.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_August2018_recode_cols.xlsx", sheet=2)
-September_2018 <-read_excel("7.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_September2018_recode_cols.xlsx", sheet=2)
-October_2018 <-read_excel("8.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_October2018_recode_cols.xlsx", sheet=2)
-November_2018 <-read_excel("9.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_November2018_recode_cols.xlsx", sheet=2)
-December_2018 <-read_excel("10.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_December2018_recode_cols.xlsx", sheet=2)
-January_2019 <-read_excel("11.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_January2019_recode_cols.xlsx", sheet=2)
-February_2019<-read_excel("12.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_February2019_recode_cols.xlsx", sheet=2)
-March_2019<-read_excel("13.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_March2019_recode_cols .xlsx", sheet=2)
-April_2019<-read_excel("14.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April2019_recode_cols.xlsx", sheet=2)
-May_2019<-read_excel("15. REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May2019.xlsx", sheet=2)
-June_2019<-read_excel("16.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June2019.xlsx", sheet = 2)
-July_2019<-read_excel("17.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_July2019.xlsx", sheet = 2)
-August_2019<-read_excel("18.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_August2019.xlsx", sheet = 2)
-September_2019<-read_excel("19.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_September2019.xlsx", sheet = 2)
-October_2019<-read_excel("20.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_October2019.xlsx", sheet = 2)
-November_2019<-read_excel("21.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_November2019.xlsx", sheet = 3)
-December_2019<-read_excel("22.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_December2019.xlsx", sheet = 3)
-January_2020<-read_excel("23.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_January2020.xlsx", sheet = 2)
-February_2020<-read_excel("24.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_Febraury2020.xlsx", sheet = 2)
-March_2020 <-read_excel("25.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_March2020.xlsx", sheet = 2)
-April_2020 <-read_excel("26.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April2020.xlsx", sheet = 3)
-May_2020 <-read_excel("27.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May2020.xlsx", sheet = 3)
-June_2020 <-read_excel("28.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June2020.xlsx", sheet = 3)
-July_2020 <-read_excel("29.REACH_YEM_Dataset_Joint-Market-Monitoring-Initiative-JMMI_July2020.xlsx", sheet = 3)
-August_2020 <-read_excel("30b.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_August2020.xlsx", sheet = 5)
-September_2020 <-read_excel("31.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_September2020.xlsx", sheet = 3)
-October_2020 <-read_excel("32.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_October2020.xlsx", sheet = 3)
-November_2020 <-read_excel("33.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_November2020.xlsx", sheet = 3)
-December_2020 <-read_excel("34.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_December2020.xlsx", sheet = 3)
-January_2021 <-read_excel("35.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_January2021.xlsx", sheet = 3)
-February_2021 <-read_excel("36.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_February 2021.xlsx", sheet = 3)
-March_2021 <-read_excel("37.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_March 2021.xlsx", sheet = 3)
+April_2018 <- read_excel("2.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April2018_recode_cols.xlsx",sheet = 2) %>% mutate(jmmi="April_2018")
+May_2018 <- read_excel("3.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May2018_recode_cols.xlsx",sheet = 2) %>% mutate(jmmi="May_2018")
+June_2018 <- read_excel("4.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June2018_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="June_2018")
+July_2018 <- read_excel("5.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_July2018_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="July_2018")
+August_2018 <-read_excel("6.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_August2018_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="August_2018")
+September_2018 <-read_excel("7.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_September2018_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="September_2018")
+October_2018 <-read_excel("8.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_October2018_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="October_2018")
+November_2018 <-read_excel("9.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_November2018_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="November_2018")
+December_2018 <-read_excel("10.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_December2018_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="December_2018")
+January_2019 <-read_excel("11.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_January2019_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="January_2019")
+February_2019<-read_excel("12.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_February2019_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="February_2019")
+March_2019<-read_excel("13.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_March2019_recode_cols .xlsx", sheet=2) %>% mutate(jmmi="March_2019")
+April_2019<-read_excel("14.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April2019_recode_cols.xlsx", sheet=2) %>% mutate(jmmi="April_2019")
+May_2019<-read_excel("15. REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May2019.xlsx", sheet=2) %>% mutate(jmmi="May_2019")
+June_2019<-read_excel("16.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June2019.xlsx", sheet = 2) %>% mutate(jmmi="June_2019")
+July_2019<-read_excel("17.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_July2019.xlsx", sheet = 2) %>% mutate(jmmi="July_2019")
+August_2019<-read_excel("18.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_August2019.xlsx", sheet = 2) %>% mutate(jmmi="August_2019")
+September_2019<-read_excel("19.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_September2019.xlsx", sheet = 2) %>% mutate(jmmi="September_2019")
+October_2019<-read_excel("20.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_October2019.xlsx", sheet = 2) %>% mutate(jmmi="October_2019")
+November_2019<-read_excel("21.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_November2019.xlsx", sheet = 3) %>% mutate(jmmi="November_2019")
+December_2019<-read_excel("22.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_December2019.xlsx", sheet = 3) %>% mutate(jmmi="December_2019")
+January_2020<-read_excel("23.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_January2020.xlsx", sheet = 2) %>% mutate(jmmi="January_2020")
+February_2020<-read_excel("24.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_Febraury2020.xlsx", sheet = 2) %>% mutate(jmmi="February_2020")
+March_2020 <-read_excel("25.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_March2020.xlsx", sheet = 2) %>% mutate(jmmi="March_2020")
+April_2020 <-read_excel("26.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April2020.xlsx", sheet = 3) %>% mutate(jmmi="April_2020")
+May_2020 <-read_excel("27.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May2020.xlsx", sheet = 3) %>% mutate(jmmi="May_2020")
+June_2020 <-read_excel("28.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June2020.xlsx", sheet = 3) %>% mutate(jmmi="June_2020")
+July_2020 <-read_excel("29.REACH_YEM_Dataset_Joint-Market-Monitoring-Initiative-JMMI_July2020.xlsx", sheet = 3) %>% mutate(jmmi="July_2020")
+August_2020 <-read_excel("30b.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_August2020.xlsx", sheet = 5) %>% mutate(jmmi="August_2020")
+September_2020 <-read_excel("31.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_September2020.xlsx", sheet = 3) %>% mutate(jmmi="September_2020")
+October_2020 <-read_excel("32.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_October2020.xlsx", sheet = 3) %>% mutate(jmmi="October_2020")
+November_2020 <-read_excel("33.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_November2020.xlsx", sheet = 3) %>% mutate(jmmi="November_2020")
+December_2020 <-read_excel("34.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_December2020.xlsx", sheet = 3) %>% mutate(jmmi="December_2020")
+January_2021 <-read_excel("35.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_January2021.xlsx", sheet = 3) %>% mutate(jmmi="January_2021")
+February_2021 <-read_excel("36.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_February 2021.xlsx", sheet = 3) %>% mutate(jmmi="February_2021")
+March_2021 <-read_excel("37.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_March 2021.xlsx", sheet = 3) %>% mutate(jmmi="March_2021")
 
 list_df = setNames(lapply(ls(), function(x) get(x)), ls())
 list_df_names <- names(list_df)
 
-# Test to go consolidate historical dataset differently to keep columns that were not consistently monitored?
-harmonise.df <- function(df){
-  colnames(df) <- tolower(colnames(df))
-  colnames(df) <- gsub("_all", "", colnames(df))
-  colnames(df) <- gsub("\\.|\\_\\.", "/", colnames(df))
-  colnames(df) <- sub(".*?sell_", "sell_", colnames(df))
-  return(df)
-}
-
-# df_test <- df_mkt_functionnality
-# t<- df_test %>% harmonise.df()
-# colnames(t)
+source("other scripts/utils.R")                                                 # harmonisation functions + adding pcodes
 
 list_df <- lapply(list_df, harmonise.df)
 df <- do.call("rbind.fill", list_df)                                            # Trying to rbind.fill all of dataset to keep market functionality questions
+
+# col_price_new <-
+  # colnames(df)[grepl("^calc_*|cost_cubic_meter|exchange_rate_result|fuel_gov_origin|wash_gov_origin|food_gov_origin|_origin", colnames(df))]
+col_price <- 
+  colnames(df)[grepl("^calc_*|cost_cubic_meter|exchange_rate_result\\b|fuel_gov_origin|wash_gov_origin|food_gov_origin", colnames(df))]
 col_mkt_functionnality <- 
   colnames(df)[grepl("mrk|market|sell_|cash_feasibility|COVID", colnames(df))]
-df_mkt_functionnality <- df %>%
-  dplyr::select(matches("country|governorate|district|_id|code|date"), all_of(col_mkt_functionnality)) %>%
-  dplyr::select(matches("admin|_name|_id|code|date"), matches("sell_"))
-  
-############################################################major change
-col_name_initial<-c("fuel_gov_origin","wash_gov_origin","food_gov_origin", colnames(September_2020%>% dplyr::select(starts_with('calc_price_'),contains("cost_cubic_metere"), contains("exchange_rate_result"),starts_with("governorate_"),starts_with("district_"),-contains('market'))))
-data_all_JMMI<-as_tibble(data.frame(test="TEST"))
-data_all_JMMI[,col_name_initial] <- NA
-colnames_pulled_all<-as_tibble(data.frame(JMMI="TEST"))
+metacol <- 
+  colnames(df)[grepl("jmmi|jmmi_date|^governorate_*|^district_*", colnames(df))]
 
-name_object<-function(df){
-  name<-deparse(substitute((df)))
-  return(name)
-}
+df_price <- df %>%                                                              # Selects all prices
+  dplyr::select(all_of(metacol), col_price)
+df_mkt_functionnality <- df %>%                                                 # Selects all market functionality indicators
+  dplyr::select(metacol, all_of(col_mkt_functionnality)) %>%
+  dplyr::select(metacol, matches("sell_"))                                      # to start with good availability => remove later
 
-round_df <- function(df, digits) {
-  nums <- vapply(df, is.numeric, FUN.VALUE = logical(1))
-  
-  df[,nums] <- round(df[,nums], digits = digits)
-  
-  (df)
-}
+data_all_JMMI <- df_price                                                       # Rename dataframe to fit rest of the code
+colnames(df_price)[!colnames(df_price) %in% colnames(data_all_JMMI)] 
 
-#https://stackoverflow.com/questions/37360009/binding-values-from-function-to-global-environment-in-r
-col_pull<-function(df, list_of_df){
-  #name<- names(list_of_df[df])
- 
-  call1 <-  sys.call(1)
-  call1[[1]] <- as.name("names")
-  call1 <- call1[1:2]
-  nm <- eval(call1)
-  name<-nm[!is.na(match(list_of_df,list(df)))]
-  
-  colnames(df)<-tolower(colnames(df))
-  colnames(df)<-gsub("_all","",colnames(df))
-  
-  df1<-df%>%
-    as_tibble()%>%
-    dplyr::select(starts_with('calc_price_'),contains("cost_cubic_meter"), contains("exchange_rate_result"),starts_with("governorate_"),starts_with("district_"),starts_with("fuel_gov_origin"),starts_with("wash_gov_origin"),starts_with("food_gov_origin"), one_of(col_mkt_functionnality))%>%
-    #rename(replace=c(colnames(df)=( gsub("_normalized", "_normalised", colnames(df) ) )  ))%>%
-    mutate(as_tibble(),jmmi = name)%>%
-    map_if(is.factor,as.character)%>%
-    as_tibble()
-  
-      #colnames(df1)<-gsub(".*/","",colnames(df1))
-    
-    colname_pull<-as_tibble(data.frame( holder = colnames(df1)))
-    names(colname_pull)<-name
-    colnames_pulled_all<<-as_tibble(rowr::cbind.fill(colnames_pulled_all, colname_pull, fill=NA ))
-  
-    data_all_JMMI <<- as_tibble(merge(df1,data_all_JMMI,all=T))
-  
-  #return(data_all_JMMI)
-}
-
-#debug(col_pull)
-#col_pull(November_2019)
-lapply((list_df), col_pull, list_of_df = list_df)
-
-#delete the test column
-data_all_JMMI<-dplyr::select(data_all_JMMI,-c(test, district_name, governorate_name))
-
-total<-0
-count_nrows<-function(df){
-  nrow_count<-as.numeric(nrow(df))
-  total<<-as.numeric(nrow_count+total)
-  return(total)
-}
-
-lapply(list_df,count_nrows)
-
-#once you have the entire dataset created
-#https://stackoverflow.com/questions/35366803/how-to-use-gsub-for-the-list-of-multiple-patterns-in-r
-#make all the column numeric that are 
-#https://stackoverflow.com/questions/25391975/grepl-in-r-to-find-matches-to-any-of-a-list-of-character-strings
-#https://stackoverflow.com/questions/38695967/how-to-convert-certain-columns-only-to-numeric
-#https://stackoverflow.com/questions/33061116/how-to-convert-a-column-of-date-string-to-dates-in-r
-toMatch <- c("calc" ,"exchange","cost")
-col_to_numeric<-unique(grep(paste(toMatch, collapse = "|"), colnames(data_all_JMMI),value = T))
+col_to_numeric <- colnames(data_all_JMMI)[grepl("calc|exchange|cost", colnames(data_all_JMMI))]
 data_all_JMMI[col_to_numeric] <- sapply(data_all_JMMI[col_to_numeric], as.numeric)
 
 #substitute out the pcodes to standardize the name (taken from JMMI scripting, with csv (utf-8) sheet)
@@ -182,22 +111,18 @@ source("./other scripts/full_modes.R")
 
 #get rid of all districts that have less than three observation
 data_all_JMMI <- data_all_JMMI %>%
-                        dplyr::group_by(jmmi)%>%
-                        dplyr::group_by(district_id)%>%
+                        dplyr::group_by(jmmi, district_id)%>%
                         filter(n()>2)%>%
                         as_tibble()
 
 #make the JMMI column act as a date column and begin to sort by that, will be important for when you want to do that national by the previous month
-data_all_JMMI$jmmi<-gsub("_"," ", data_all_JMMI$jmmi)
+# data_all_JMMI$jmmi<-gsub("_"," ", data_all_JMMI$jmmi)
 #this is the actual date that will be sorted by with in the server script
-data_all_JMMI$jmmi_date <- as.character(as.Date(as.yearmon(as.character(data_all_JMMI$jmmi))))
+# data_all_JMMI$jmmi_date_old <- as.character(as.Date(as.yearmon(as.character(data_all_JMMI$jmmi))))
 date_list<-sort(unique(data_all_JMMI$jmmi_date))
+data_all_JMMI$country_id<-"YE"                                                  #add a country ID to sort the national by (because aggregate_median needs a key column code)
 
-#add a country ID to sort the national by (because aggregate_median needs a key column code)
-data_all_JMMI$country_id<-"YE"
-
-data_all_market_functionality <- data_all_JMMI %>%
-  dplyr::select(matches("admin|code|Code|ID|date"), one_of(col_mkt_functionnality))
+# Aggregation loop - will aggregate by median and calculate # of observations for all prices by district and governorate 
 
 for(i in seq_along(date_list)){
   if (i ==1){
@@ -225,8 +150,8 @@ for(i in seq_along(date_list)){
       dplyr::select("country_id","jmmi","jmmi_date")%>%
       dplyr::count(country_id, jmmi)
     
-    
   }else{
+    
     df1<-data_all_JMMI%>%
       filter(jmmi_date==date_list[i])
     
@@ -267,13 +192,13 @@ for(i in seq_along(date_list)){
   }
 }
 
+# Compute medians and coverage only for 
 
 for(i in seq_along(date_list)){
   if (i ==1){
     df1<-data_all_JMMI%>%
       filter(jmmi_date==date_list[i])
     
-      
     district_all_pct_change<-df1%>%
       aggregate_median("district_id")
     
@@ -304,12 +229,12 @@ for(i in seq_along(date_list)){
       filter(jmmi_date==date_list[i-1])
     
     df0_pull<-unique(df0$district_id)
-    df_dist<-subset(df1, district_id %in% df0_pull)
+    df_dist<-subset(df1, district_id %in% df0_pull)                             # subsets only districts that were covered previous month 
     
     district_all_alone_pct_change<-df_dist%>%
       aggregate_median("district_id")
     
-    district_all_pct_change<-bind_rows(district_all_alone_pct_change,district_all_pct_change)
+    district_all_pct_change<-bind_rows(district_all_alone_pct_change,district_all_pct_change) # Add the medians of this months to all past months, based on consistent coverage [That works if ]
     
     district_obs_pct_change<-df1%>%
       dplyr::select("district_id","jmmi","jmmi_date")%>%
