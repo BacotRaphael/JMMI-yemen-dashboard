@@ -325,3 +325,6 @@ write.csv(national_final_pct_change, file = "./data/national_interactive_pct_cha
 
 write.csv(data_all_JMMI, file = "./data/data_all.csv")
 
+## Note perso: Select the market functionality indicator raw (with right formatting) for further use in the dashboard 
+## [integrate piece of code in the global script of dashboard to include it in the plot tab and data explorer?]
+
