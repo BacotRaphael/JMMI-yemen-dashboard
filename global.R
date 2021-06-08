@@ -1,36 +1,59 @@
 #GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-#install packages
-library(devtools)
-library(usethis)
-library(shiny)
-library(shinyjs)
-library(rgdal)
-library(dplyr)
-library(leaflet)
-library(highcharter)
-library(zoo)
-library(ggplot2)
-library(rgeos)
-library(classInt)
-library(geosphere)
-library(shinythemes)
-library(ggplot2)
-library(sf)
-library(purrr)
-library(shinydashboard)
-library(readxl)
-library(DT)
-library(formattable)
-library(tibble)
-library(curl)
-library(sp)
-library(stringr)
-library(shinyWidgets)
-library(leaflet.extras)
-library(kableExtra)
-library(tidytidbits)
+# Install/Load libraries
+library(utils)
+if (!require("pacman")) install.packages("pacman")
+# pacman::p_load(devtools, usethis, shiny, shinyjs, rgdal, dplyr, leaflet, highcharter, zoo, ggplot2, rgeos, classInt, geosphere,
+#                shinythemes, sf, purrr, shinydashboard, readxl, DT, formattable, tibble, curl, sp, stringr, shinyWidgets,
+#                leaflet.extras, kableExtra, tidytidbits, data.table, openxlsx, sass)
+packages <- c("devtools", "usethis", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "classInt", "geosphere", "shinythemes", "sf", "purrr", "shinydashboard",
+              "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets", "leaflet.extras", "kableExtra", "tidytidbits", "data.table", "openxlsx",
+                  "sass", "Matrix", "robustbase", "rgl", "minpack.lm", "googlesheets", "tidyselect", "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices","datasets", "methods")
+packages1 <- c("devtools", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "geosphere",
+              "shinythemes", "sf", "purrr", "shinydashboard", "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets",
+              "leaflet.extras", "kableExtra", "tidytidbits", "data.table", "openxlsx", "tidyr", "sass")
+
+pacman::p_load(char = packages1)
+# p_load_gh("mabafaba/reachR")
+# other.packages <- c("googlesheets", "reachR", "qpcR", "Matrix", "robustbase", "rgl", "minpack.lm", "MASS", "tidyselect",
+#                     "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices", "utils", "datasets", "methods")
+
+# #install packages
+# library(devtools)
+# library(usethis)
+# library(shiny)
+# library(shinyjs)
+# library(rgdal)
+# library(dplyr)
+# library(leaflet)
+# library(highcharter)
+# library(zoo)
+# library(ggplot2)
+# library(rgeos)
+# library(classInt)
+# library(geosphere)
+# library(shinythemes)
+# library(sf)
+# library(purrr)
+# library(shinydashboard)
+# library(readxl)
+# library(DT)
+# library(formattable)
+# library(tibble)
+# library(curl)
+# library(sp)
+# library(stringr)
+# library(shinyWidgets)
+# library(leaflet.extras)
+# library(kableExtra)
+# library(tidytidbits)
+# library(data.table)
+# library(openxlsx)
+# # remove.packages("sass")
+# # install.packages("sass")
+# library("sass")
+# # packageVersion("sass") 
 
 smeb <- data.frame(SMEB = c(rep("SMEB Wash", 4), rep("SMEB Wash", 5)),                                  # define SMEB content table
                    Category = c(rep("Non-Food Items", 3), "Water", rep("Food Items", 5)),
@@ -167,40 +190,44 @@ round_df <- function(df, digits) {
 }
 
 ##-------------------------- TABULAR DATA WRANGLE ----------------------
-#
-full_data <- read.csv("data/data_all.csv")%>%
-  select(c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"))%>%
-  setNames(c("date","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates"))%>%
-  mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)),
-         Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)), .before="wheat_flour")%>%
-  mutate(date=as.Date(as.yearmon(date)))
-  
-GSh<-read.csv("data/governorate_interactive.csv")%>%
-  as_tibble()%>%
-  dplyr::select(-X)
 
-  Admin1data <- mutate(GSh, WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)),
-                       Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt))) #The SMEB calculation
-  Admin1data$WASH_SMEB<-round(Admin1data$WASH_SMEB,0)
-  Admin1data$Food_SMEB<-round(Admin1data$Food_SMEB,0)
-  
-GSh2<-read.csv("data/district_interactive.csv")%>%
-  as_tibble()%>%
-  dplyr::select(-X)
+# Full district database for data explorer KII dataset 
 
-  Admin2data <- mutate(GSh2, WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)),
-                       Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt))) #The SMEB caluclation
-  Admin2data$WASH_SMEB<-round(Admin2data$WASH_SMEB,0)
-  Admin2data$Food_SMEB<-round(Admin2data$Food_SMEB,0)
+full_data <- read.csv("data/data_all.csv") %>%
+  dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra|mrk_supply_issues")) %>%
+  setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
+           new=c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates")) %>%
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour")%>%
+  dplyr::mutate(Date=as.Date(as.yearmon(Date))) %>%
+  dplyr::rename("mrk_increse_food_100" = mrk_increse_food_100,
+                "mrk_increse_food_50" = mrk_increse_food_50,
+                "mrk_increse_fuel_100" = mrk_increse_fuel_100,
+                "mrk_increse_fuel_50" = mrk_increse_fuel_50,
+                "mrk_increse_wash_100" = mrk_increse_wash_100,
+                "mrk_increse_wash_50" = mrk_increse_wash_50,
+                "mrk_increse_water_100" = mrk_increse_water_100,
+                "mrk_increse_water_50" = mrk_increse_water_50,
+                "mrk_supply_routes" = mrk_supply_routes) %>%
+  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_"))
 
-GShnat<-read.csv("data/national_interactive.csv")%>%
-  as_tibble()%>%
-  dplyr::select(-X)
+# full_data <- read.csv("data/data_all.csv")%>%
+#   dplyr::select(c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"))%>%
+#   setNames(c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates"))%>%
+#   dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)),
+#          Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)), .before="wheat_flour")%>%
+#   dplyr::mutate(Date=as.Date(as.yearmon(Date)))
 
-  AdminNatData<-mutate(GShnat,WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)),Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt))) #The SMEB caluclation)
-  AdminNatData$WASH_SMEB<-round(AdminNatData$WASH_SMEB,0)
-  AdminNatData$Food_SMEB<-round(AdminNatData$Food_SMEB,0)
-  
+Admin1data <- read.csv("data/governorate_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>%
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB calculation
+Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr::select(-X) %>% 
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB caluclation
+AdminNatData <- read.csv("data/national_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>% 
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB caluclation)
+
 max_date <- max(as.Date(as.yearmon(AdminNatData$date)))  
 
 #Wrangle Data into appropriate formats
@@ -233,15 +260,26 @@ AdminNatData_current <- AdminNatTable %>% #subset only recent month dates to att
   arrange(desc(date2)) %>%
   filter(date2 == max_date)
 currentD <- as.character(format(max(AdminNatTable$date2),"%B %Y"))
-  #define current date for disply in dashboard
+  #define current date for display in dashboard
 
-#Price long data for easier manipulation in dashboard
-
+# Price long data for Plot tab
 prices_long <- Admin2table %>%
-  select(date2, government_name:district_ID, num_obs, everything(), -date, -government_ID, -district_ID) %>%
-  rename(Date=date2, Governorate=government_name, District=district_name) %>%
-  tidyr::pivot_longer(cols = 5:ncol(.)) %>%
-  rename(Item=name, Price=value)
+  dplyr::select(date2, government_name:district_ID, everything(), -date, -government_ID, -district_ID) %>%
+  dplyr::rename(Date=date2, Governorate=government_name, District=district_name) %>%
+  tidyr::pivot_longer(cols = 4:ncol(.)) %>%
+  dplyr::rename(Item=name, Price=value)
+
+# Full district database for data explorer + Plot tab
+indicators <- read.xlsx("data/market functionnality indicators.xlsx", check.names = F) %>%
+  setnames(gsub("_", " ", gsub("\\.", " ", colnames(.))))
+indicators_long <- indicators %>%
+  tidyr::pivot_longer(cols = 4:ncol(.)) %>%
+  dplyr::rename(Item=name, Price=value)
+prices_long <- prices_long %>% rbind(indicators_long)                           ## For the plot tab
+
+data <- Admin2table %>%                                                         ## for the data explorer tab
+  dplyr::rename(Date=date, Governorate=government_name, District=district_name) %>%
+  left_join(indicators, by = c("Date", "Governorate", "District"))
 
 ##-------------------------- SPATIAL DATA WRANGLE ----------------------
 #Read in shapefiles
@@ -251,7 +289,7 @@ Admin2<- readOGR("./www", "YEM_adm2_Districts")
 Admin1@data$admin1name<-gsub("Amanat Al Asimah", "Sana'a City", Admin1@data$admin1name)
 Admin1@data$admin1refn<-gsub("Amanat Al Asimah", "Sana'a City", Admin1@data$admin1refn)
 Admin2@data$admin1name<-gsub("Amanat Al Asimah", "Sana'a City", Admin2@data$admin1name)
-Admin2@data<- Admin2@data %>% mutate_if(is.factor, as.character) 
+Admin2@data<- Admin2@data %>% dplyr::mutate_if(is.factor, as.character) 
 
 
 ##-------------------------- COMBINE TABULAR & SPATIAL DATA----------------------
@@ -296,64 +334,52 @@ UKRl1<- as.data.frame(cbind(48.5164,15.5527))
 YEMl@data<-cbind(YEMl@data, "YEMEN", UKRl1 )
 colnames(YEMl@data) <- c("index","name","lon", "lat")
 
+## For drop down selection in data explorer and plot tabs 
 
-vars <- c(
-  "WASH SMEB"="WASH_SMEB",
-  "Food SMEB"="Food_SMEB",
-  "Parallel Exchange Rates"="exchange_rates",
-  "Wheat Flour" = "wheat_flour",
-  "Rice" = "rice",
-  "Dry Beans" = "beans_dry",
-  "Canned Beans" = "beans_can",
-  "Lentils" = "lentil",
-  "Vegetable Oil" = "vegetable_oil",
-  "Sugar" = "sugar",
-  "Salt" = "salt",
-  "Potato" = "potato",
-  "Onion" = "onion",
-  "Petrol" = "petrol",
-  "Diesel" = "diesel",
-  "Bottled Water"="bottled_water",
-  "Treated Water"="treated_water",
-  "Soap"="soap",
-  "Laundry Powder"="laundry_powder",
-  "Sanitary Napkins"="sanitary_napkins",
-  "Water Trucking"= "cost_cubic_meter"
-)
+vars_functionnality <- colnames(indicators)[-(1:3)]
+names(vars_functionnality)<-vars_functionnality
+
 
 plot_location_list <- Admin2table %>%                                                 # Define location list
   ungroup %>%
-  select(government_name, district_name) %>%
-  arrange(government_name, district_name) %>%
-  rename(Governorate=government_name, District=district_name) %>%
+  dplyr::rename(Governorate=government_name, District=district_name) %>%
+  dplyr::select(Governorate, District) %>%
+  arrange(Governorate, District) %>%
   filter(!duplicated(District))
 
 #DROP DOWN MENU SELECTIONS 
-vars1 <- c(
-  "WASH SMEB"="WASH_SMEB",
-  "Food SMEB"="Food_SMEB",
-  "Parallel Exchange Rates"="exchange_rates",
-  "Wheat Flour" = "wheat_flour",
-  "Rice" = "rice",
-  "Dry Beans" = "beans_dry",
-  "Canned Beans" = "beans_can",
-  "Lentils" = "lentil",
-  "Vegetable Oil" = "vegetable_oil",
-  "Sugar" = "sugar",
-  "Salt" = "salt",
-  "Potato" = "potato",
-  "Onion" = "onion",
-  "Petrol" = "petrol",
-  "Diesel" = "diesel",
-  "Bottled Water"="bottled_water",
-  "Treated Water"="treated_water",
-  "Soap"="soap",
-  "Laundry Powder"="laundry_powder",
-  "Sanitary Napkins"="sanitary_napkins",
-  "Water Trucking"= "cost_cubic_meter"
-)
+## Drop-down for Plot & Data Explorer + map parameters
+# To be updated whenever adding new item
 
-## Testing
+vars <- c(
+  "WASH SMEB"="WASH_SMEB", "Food SMEB"="Food_SMEB",
+  "Parallel Exchange Rates"="exchange_rates", "Wheat Flour" = "wheat_flour",
+  "Rice" = "rice", "Dry Beans" = "beans_dry",
+  "Canned Beans" = "beans_can", "Lentils" = "lentil",
+  "Vegetable Oil" = "vegetable_oil", "Sugar" = "sugar",
+  "Salt" = "salt", "Potato" = "potato",
+  "Onion" = "onion", "Petrol" = "petrol",
+  "Diesel" = "diesel", "Bottled Water"="bottled_water",
+  "Treated Water"="treated_water", "Soap"="soap",
+  "Laundry Powder"="laundry_powder", "Sanitary Napkins"="sanitary_napkins",
+  "Water Trucking"= "cost_cubic_meter"
+  )
+title.legend <- c("WASH SMEB Cost", "Food SMEB Cost", "YER to 1 USD", "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)", 
+  "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 L)", "Price (1 L)", "Price (0.75 L)", "Price (10 L)", 
+  "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)",
+  rep("	% of traders", 28))
+unit <- c(rep(" YER", 21), rep(" %", 28))
+
+## Setting palettes for all items:
+pal1<-colorRamp(c("#ADFFA5", "#A7383D", "#420A0D"), interpolate="linear")
+pal2<-colorRamp(c("#C3FFFD", "#6EFBF6", "#009F99", "#00504D"), interpolate="linear")
+pal3<-colorRamp(c("#C9C3F8", "#5D52AD", "#FAD962", "#AA9239"), interpolate="linear")
+pal4<-colorRamp(c("#FFD7D9", "#FF535B", "#FB000D", "#830007", "#480004"), interpolate="linear")
+pal5<-colorRamp(c("#C7C0FF", "#7A6AFF", "#1501B9", "#0A005D", "#050033"), interpolate="linear")
+
+palette <- c(pal1, "Greens", "Greens", pal2, "YlOrBr", pal2, "BuPu","RdPu", pal3, "Greens", pal3,
+             "Greens", "Greens", "YlOrBr", pal4, pal5, pal2, "RdPu", "Purples", "BuPu", pal3, 
+             rep("YlOrBr", 28))                                                 # keep same palette for the market functionality indicators
 
 indicator_group <- c(rep("I. Indices", 2), 
                      "II. Currencies",
@@ -361,11 +387,16 @@ indicator_group <- c(rep("I. Indices", 2),
                      rep("IV. Fuels", 2),
                      rep("V. Water", 2),
                      rep("VI. Non-food items", 3),
-                     "V. Water")
+                     "V. Water",
+                     rep("VI. Other indicators", 28))
 
-indicator_list <- data.frame(Item=names(vars1),
-                             Variable=unname(vars1),
-                             Group = indicator_group)
+# Indicator_list => will determine drop down list + legend + palettes for maps
+indicator_list <- data.frame(Item=names(c(vars, vars_functionnality)),
+                             Variable=unname(c(vars, vars_functionnality)),
+                             Group = indicator_group,
+                             Legend = title.legend,
+                             Unit = unit,
+                             Palette = I(palette))
 
 dates <- sort(unique(Admin2table$date2))                                            # define list with date range in data
 dates_min  <- as.Date("2020-01-01")                                               # set minimum date to be displayed

@@ -61,43 +61,40 @@ December_2020 <-read_excel("34.REACH_YEM_Dataset_Joint Market Monitoring Initiat
 January_2021 <-read_excel("35.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_January2021.xlsx", sheet = 3) %>% mutate(jmmi="January_2021")
 February_2021 <-read_excel("36.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_February 2021.xlsx", sheet = 3) %>% mutate(jmmi="February_2021")
 March_2021 <-read_excel("37.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_March 2021.xlsx", sheet = 3) %>% mutate(jmmi="March_2021")
+April_2021 <- read_excel("38.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April 2021.xlsx", sheet = 3) %>% mutate(jmmi="April_2021")
+May_2021 <- read_excel("39.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May 2021.xlsx", sheet = 3) %>% mutate(jmmi="May_2021")
+
 
 list_df = setNames(lapply(ls(), function(x) get(x)), ls())
 list_df_names <- names(list_df)
 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("other scripts/utils.R")                                                 # harmonisation functions + adding pcodes
 
 list_df <- lapply(list_df, harmonise.df)
 df <- do.call("rbind.fill", list_df)                                            # Trying to rbind.fill all of dataset to keep market functionality questions
 
-# col_price_new <-
-  # colnames(df)[grepl("^calc_*|cost_cubic_meter|exchange_rate_result|fuel_gov_origin|wash_gov_origin|food_gov_origin|_origin", colnames(df))]
 col_price <- 
   colnames(df)[grepl("^calc_*|cost_cubic_meter|exchange_rate_result\\b|fuel_gov_origin|wash_gov_origin|food_gov_origin", colnames(df))]
 col_mkt_functionnality <- 
   colnames(df)[grepl("mrk|market|sell_|cash_feasibility|COVID", colnames(df))]
 metacol <- 
-  colnames(df)[grepl("jmmi|jmmi_date|^governorate_*|^district_*", colnames(df))]
+  colnames(df)[grepl("jmmi|jmmi_date|^country_|^governorate_*|^district_*", colnames(df))]
 
-df_price <- df %>%                                                              # Selects all prices
-  dplyr::select(all_of(metacol), col_price)
-df_mkt_functionnality <- df %>%                                                 # Selects all market functionality indicators
-  dplyr::select(metacol, all_of(col_mkt_functionnality)) %>%
-  dplyr::select(metacol, matches("sell_"))                                      # to start with good availability => remove later
+data_all_JMMI <- df %>%                                                           # Rename dataframe to fit rest of the code
+  dplyr::select(-district_name, -governorate_id, -governorate_name)               # Get rid of all other meta columns to only keep streamlined pcodes 
 
-data_all_JMMI <- df_price                                                       # Rename dataframe to fit rest of the code
-colnames(df_price)[!colnames(df_price) %in% colnames(data_all_JMMI)] 
-
+# colnames(df_price)[!colnames(df_price) %in% colnames(data_all_JMMI)] 
 col_to_numeric <- colnames(data_all_JMMI)[grepl("calc|exchange|cost", colnames(data_all_JMMI))]
 data_all_JMMI[col_to_numeric] <- sapply(data_all_JMMI[col_to_numeric], as.numeric)
 
 #substitute out the pcodes to standardize the name (taken from JMMI scripting, with csv (utf-8) sheet)
 this_script_path<-(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(this_script_path)
-source("./other scripts/add_pcodes.R")
 
+source("./other scripts/add_pcodes.R")
 #debug(add.pcodes)
-data_all_JMMI<-add.pcodes(data_all_JMMI)
+data_all_JMMI<-add.pcodes(data_all_JMMI) %>% dplyr::select(matches("country_"), matches("governorate_"), matches("district_"), everything())
 
 #change Pcodes for origin governorates
 source("./other scripts/gov_code_switch.R")
@@ -120,7 +117,13 @@ data_all_JMMI <- data_all_JMMI %>%
 #this is the actual date that will be sorted by with in the server script
 # data_all_JMMI$jmmi_date_old <- as.character(as.Date(as.yearmon(as.character(data_all_JMMI$jmmi))))
 date_list<-sort(unique(data_all_JMMI$jmmi_date))
-data_all_JMMI$country_id<-"YE"                                                  #add a country ID to sort the national by (because aggregate_median needs a key column code)
+
+df_mkt_functionnality <- data_all_JMMI %>%                                      # Selects all market functionality indicators
+  dplyr::select(metacol, all_of(col_mkt_functionnality))
+data_all <- data_all_JMMI %>%                                                   # Selects all prices + market functionnality
+  dplyr::select(all_of(metacol), all_of(col_price), all_of(col_mkt_functionnality))
+data_all_JMMI <- data_all_JMMI %>%
+  dplyr::select(all_of(metacol), all_of(col_price))                             # Only keeps prices [for aggregation below]
 
 # Aggregation loop - will aggregate by median and calculate # of observations for all prices by district and governorate 
 
@@ -323,8 +326,72 @@ write.csv(district_final_pct_change, file = "./data/district_interactive_pct_cha
 write.csv(governorate_final_pct_change, file = "./data/governorate_interactive_pct_change.csv")
 write.csv(national_final_pct_change, file = "./data/national_interactive_pct_change.csv")
 
-write.csv(data_all_JMMI, file = "./data/data_all.csv")
+write.csv(data_all, file = "./data/data_all.csv")
+
+# 
+# df_mkt_functionnality_all <- df_mkt_functionnality %>%
+#   dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
+#   dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
+#   dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
+#   dplyr::rename(Date = date,
+#                 Governorate = governorate,
+#                 District = district,
+#                 "mrk_increse_food_100" = mrk_increse_food_100,
+#                 "mrk_increse_food_50" = mrk_increse_food_50,
+#                 "mrk_increse_fuel_100" = mrk_increse_fuel_100,
+#                 "mrk_increse_fuel_50" = mrk_increse_fuel_50,
+#                 "mrk_increse_wash_100" = mrk_increse_wash_100,
+#                 "mrk_increse_wash_50" = mrk_increse_wash_50,
+#                 "mrk_increse_water_100" = mrk_increse_water_100,
+#                 "mrk_increse_water_50" = mrk_increse_water_50,
+#                 "mrk_supply_routes" = mrk_supply_routes) %>%
+#   rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_")) %>%
+#   write.csv("./data/data_all_functionnality.csv")
+
 
 ## Note perso: Select the market functionality indicator raw (with right formatting) for further use in the dashboard 
 ## [integrate piece of code in the global script of dashboard to include it in the plot tab and data explorer?]
+
+# test <- df_mkt_functionnality %>%
+#   dplyr::select(which(sapply(., unique) %in% c(TRUE, FALSE, 1,0,"yes","no","Yes","No", NA, "NA")), matches("jmmi_date|governorate_name|district_name"))
+# test2 <- df_mkt_functionnality %>%
+#   select_if(~all(unique(.) %in% c(TRUE, FALSE, 1,0,"yes","no","Yes","No",NA, "NA")))
+
+indicators <- df_mkt_functionnality %>%
+  dplyr::select(-matches("country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
+  dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
+  gather(Indicator, Value, 4:(ncol(.))) %>%
+  dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
+  dplyr::group_by(date, governorate, district, Indicator) %>%
+  dplyr::summarise(freq = sum(Value == 1 | Value == "yes" | Value == "Yes", na.rm = TRUE) / sum(!is.na(Value)) * 100) %>%
+  mutate_if(is.numeric, round, 0) %>% 
+  spread(Indicator, freq) %>%
+  dplyr::rename(Date = date,
+                Governorate = governorate,
+                District = district,
+                "mrk_increse_food_100" = mrk_increse_food_100,
+                "mrk_increse_food_50" = mrk_increse_food_50,
+                "mrk_increse_fuel_100" = mrk_increse_fuel_100,
+                "mrk_increse_fuel_50" = mrk_increse_fuel_50,
+                "mrk_increse_wash_100" = mrk_increse_wash_100,
+                "mrk_increse_wash_50" = mrk_increse_wash_50,
+                "mrk_increse_water_100" = mrk_increse_water_100,
+                "mrk_increse_water_50" = mrk_increse_water_50,
+                "mrk_supply_routes" = mrk_supply_routes) %>%
+  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_"))
+
+indicators %>% write.xlsx("data/market functionnality indicators.xlsx")
+
+
+
+
+
+
+
+
+
+
+
+
+
 
