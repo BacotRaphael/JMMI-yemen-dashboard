@@ -2,6 +2,390 @@
 # 08.06.21
 # With food components
 
+#GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# packages <- c("devtools", "usethis", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "classInt", "geosphere", "shinythemes", "sf", "purrr", "shinydashboard",
+#               "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets", "leaflet.extras", "kableExtra", "tidytidbits", "data.table", "openxlsx",
+#                   "sass", "Matrix", "robustbase", "rgl", "minpack.lm", "googlesheets", "tidyselect", "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices","datasets", "methods")
+# packages1 <- c("devtools", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "geosphere",
+#               "shinythemes", "sf", "purrr", "shinydashboard", "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets",
+#               "leaflet.extras", "tidytidbits", "data.table", "openxlsx", "tidyr", "sass")
+# pacman::p_load(char = packages1)
+
+# other.packages <- c("googlesheets", "reachR", "qpcR", "Matrix", "robustbase", "rgl", "minpack.lm", "MASS", "tidyselect",
+#                     "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices", "utils", "datasets", "methods")
+
+# Install/Load libraries
+# library(utils)
+# if (!require("pacman")) install.packages("pacman")
+# pacman::p_load(devtools, usethis, shiny, shinyjs, rgdal, dplyr, leaflet, highcharter, zoo, ggplot2, rgeos, classInt, geosphere,
+#                shinythemes, sf, purrr, shinydashboard, readxl, DT, formattable, tibble, curl, sp, stringr, shinyWidgets,
+#                leaflet.extras, kableExtra, tidytidbits, data.table, openxlsx, sass, grDevices)
+# p_load_gh("mabafaba/reachR")
+
+#install packages
+library(devtools)
+library(usethis)
+library(shiny)
+library(shinyjs)
+library(rgdal)
+library(dplyr)
+library(leaflet)
+library(highcharter)
+library(zoo)
+library(ggplot2)
+library(rgeos)
+library(classInt)
+library(geosphere)
+library(shinythemes)
+library(sf)
+library(purrr)
+library(shinydashboard)
+library(readxl)
+library(DT)
+library(formattable)
+library(tibble)
+library(curl)
+library(sp)
+library(stringr)
+library(shinyWidgets)
+library(leaflet.extras)
+library(kableExtra)
+library(tidytidbits)
+library(data.table)
+library(openxlsx)
+library(grDevices)
+library(sass)
+
+addLegend_decreasing <- function (map, position = c("topright", "bottomright", "bottomleft", 
+                                                    "topleft"), pal, values, na.label = "NA", bins = 7, colors, 
+                                  opacity = 0.5, labels = NULL, labFormat = labelFormat(), 
+                                  title = NULL, className = "info legend", layerId = NULL, 
+                                  group = NULL, data = getMapData(map), decreasing = FALSE) {
+  position <- match.arg(position)
+  type <- "unknown"
+  na.color <- NULL
+  extra <- NULL
+  if (!missing(pal)) {
+    if (!missing(colors)) 
+      stop("You must provide either 'pal' or 'colors' (not both)")
+    if (missing(title) && inherits(values, "formula")) 
+      title <- deparse(values[[2]])
+    values <- evalFormula(values, data)
+    type <- attr(pal, "colorType", exact = TRUE)
+    args <- attr(pal, "colorArgs", exact = TRUE)
+    na.color <- args$na.color
+    if (!is.null(na.color) && col2rgb(na.color, alpha = TRUE)[[4]] == 
+        0) {
+      na.color <- NULL
+    }
+    if (type != "numeric" && !missing(bins)) 
+      warning("'bins' is ignored because the palette type is not numeric")
+    if (type == "numeric") {
+      cuts <- if (length(bins) == 1) 
+        pretty(values, bins)
+      else bins	
+      
+      if (length(bins) > 2) 
+        if (!all(abs(diff(bins, differences = 2)) <= 
+                 sqrt(.Machine$double.eps))) 
+          stop("The vector of breaks 'bins' must be equally spaced")
+      n <- length(cuts)
+      r <- range(values, na.rm = TRUE)
+      cuts <- cuts[cuts >= r[1] & cuts <= r[2]]
+      n <- length(cuts)
+      p <- (cuts - r[1])/(r[2] - r[1])
+      extra <- list(p_1 = p[1], p_n = p[n])
+      p <- c("", paste0(100 * p, "%"), "")
+      if (decreasing == TRUE){
+        colors <- pal(rev(c(r[1], cuts, r[2])))
+        labels <- rev(labFormat(type = "numeric", cuts))
+      }else{
+        colors <- pal(c(r[1], cuts, r[2]))
+        labels <- rev(labFormat(type = "numeric", cuts))
+      }
+      colors <- paste(colors, p, sep = " ", collapse = ", ")
+      
+    }
+    else if (type == "bin") {
+      cuts <- args$bins
+      n <- length(cuts)
+      mids <- (cuts[-1] + cuts[-n])/2
+      if (decreasing == TRUE){
+        colors <- pal(rev(mids))
+        labels <- rev(labFormat(type = "bin", cuts))
+      }else{
+        colors <- pal(mids)
+        labels <- labFormat(type = "bin", cuts)
+      }
+      
+    }
+    else if (type == "quantile") {
+      p <- args$probs
+      n <- length(p)
+      cuts <- quantile(values, probs = p, na.rm = TRUE)
+      mids <- quantile(values, probs = (p[-1] + p[-n])/2, 
+                       na.rm = TRUE)
+      if (decreasing == TRUE){
+        colors <- pal(rev(mids))
+        labels <- rev(labFormat(type = "quantile", cuts, p))
+      }else{
+        colors <- pal(mids)
+        labels <- labFormat(type = "quantile", cuts, p)
+      }
+    }
+    else if (type == "factor") {
+      v <- sort(unique(na.omit(values)))
+      colors <- pal(v)
+      labels <- labFormat(type = "factor", v)
+      if (decreasing == TRUE){
+        colors <- pal(rev(v))
+        labels <- rev(labFormat(type = "factor", v))
+      }else{
+        colors <- pal(v)
+        labels <- labFormat(type = "factor", v)
+      }
+    }
+    else stop("Palette function not supported")
+    if (!any(is.na(values))) 
+      na.color <- NULL
+  }
+  else {
+    if (length(colors) != length(labels)) 
+      stop("'colors' and 'labels' must be of the same length")
+  }
+  legend <- list(colors = I(unname(colors)), labels = I(unname(labels)), 
+                 na_color = na.color, na_label = na.label, opacity = opacity, 
+                 position = position, type = type, title = title, extra = extra, 
+                 layerId = layerId, className = className, group = group)
+  invokeMethod(map, data, "addLegend", legend)
+}
+
+round_df <- function(df, digits) {
+  nums <- vapply(df, is.numeric, FUN.VALUE = logical(1))
+  
+  df[,nums] <- round(df[,nums], digits = digits)
+  
+  (df)
+}
+
+##-------------------------- TABULAR DATA WRANGLE ----------------------
+
+# Full district database for data explorer KII dataset 
+
+full_data <- read.csv("data/data_all.csv") %>%
+  dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra|mrk_supply_issues")) %>%
+  setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
+           new=c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates")) %>%
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour")%>%
+  dplyr::mutate(Date=as.Date(as.yearmon(Date))) %>%
+  dplyr::rename("mrk_increse_food_100" = mrk_increse_food_100,
+                "mrk_increse_food_50" = mrk_increse_food_50,
+                "mrk_increse_fuel_100" = mrk_increse_fuel_100,
+                "mrk_increse_fuel_50" = mrk_increse_fuel_50,
+                "mrk_increse_wash_100" = mrk_increse_wash_100,
+                "mrk_increse_wash_50" = mrk_increse_wash_50,
+                "mrk_increse_water_100" = mrk_increse_water_100,
+                "mrk_increse_water_50" = mrk_increse_water_50,
+                "mrk_supply_routes" = mrk_supply_routes) %>%
+  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_"))
+
+# full_data <- read.csv("data/data_all.csv")%>%
+#   dplyr::select(c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"))%>%
+#   setNames(c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates"))%>%
+#   dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)),
+#          Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)), .before="wheat_flour")%>%
+#   dplyr::mutate(Date=as.Date(as.yearmon(Date)))
+
+Admin1data <- read.csv("data/governorate_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>%
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB calculation
+Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr::select(-X) %>% 
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB caluclation
+AdminNatData <- read.csv("data/national_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>% 
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB caluclation)
+
+max_date <- max(as.Date(as.yearmon(AdminNatData$date)))  
+
+#Wrangle Data into appropriate formats
+#Governorates
+Admin1table<- Admin1data %>% as.data.frame %>%
+  mutate_at(vars(-matches("date|government")), ~ round(as.numeric(.)), 0) %>%
+  mutate(date2 = as.Date(as.yearmon(date)))
+
+Admin1data_current <- Admin1table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
+currentD <- as.character(format(max(Admin1table$date2),"%B %Y"))                                # define current date for disply in dashboard
+
+#Districts
+Admin2table <- Admin2data %>% as.data.frame %>% 
+  mutate_at(vars(-matches("date|government|district")), ~ round(as.numeric(.)), 0) %>%
+  mutate(date2 = as.Date(as.yearmon(date)))
+
+Admin2data_current <- Admin2table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
+currentD <- as.character(format(max(Admin2table$date2),"%B %Y"))                                # define current date for disply in dashboard
+
+#National
+AdminNatTable <- AdminNatData %>% as.data.frame %>%
+  mutate_at(vars(-matches("date")), ~ round(as.numeric(.)), 0) %>%
+  mutate(date2 = as.Date(as.yearmon(date)))
+
+AdminNatData_current <- AdminNatTable %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
+currentD <- as.character(format(max(AdminNatTable$date2),"%B %Y"))                                  # define current date for display in dashboard
+
+# Price long data for Plot tab
+prices_long <- Admin2table %>%
+  dplyr::select(date2, government_name:district_ID, everything(), -date, -government_ID, -district_ID) %>%
+  dplyr::rename(Date=date2, Governorate=government_name, District=district_name) %>%
+  tidyr::pivot_longer(cols = 4:ncol(.)) %>%
+  dplyr::rename(Item=name, Price=value)
+
+# Full district database for data explorer + Plot tab
+indicators <- read.xlsx("data/market functionnality indicators.xlsx", check.names = F) %>%
+  setnames(gsub("_", " ", gsub("\\.", " ", colnames(.))))
+indicators_long <- indicators %>%
+  tidyr::pivot_longer(cols = 4:ncol(.)) %>%
+  dplyr::rename(Item=name, Price=value)
+prices_long <- prices_long %>% rbind(indicators_long)                           ## For the plot tab
+
+data <- Admin2table %>%                                                         ## for the data explorer tab
+  dplyr::rename(Date=date, Governorate=government_name, District=district_name) %>%
+  left_join(indicators, by = c("Date", "Governorate", "District"))
+
+##-------------------------- SPATIAL DATA WRANGLE ----------------------
+#Read in shapefiles
+Admin1<- readOGR("./www", "YEM_adm1_Governorates")
+Admin2<- readOGR("./www", "YEM_adm2_Districts")
+
+Admin1@data$admin1name<-gsub("Amanat Al Asimah", "Sana'a City", Admin1@data$admin1name)
+Admin1@data$admin1refn<-gsub("Amanat Al Asimah", "Sana'a City", Admin1@data$admin1refn)
+Admin2@data$admin1name<-gsub("Amanat Al Asimah", "Sana'a City", Admin2@data$admin1name)
+Admin2@data<- Admin2@data %>% dplyr::mutate_if(is.factor, as.character) 
+
+##-------------------------- COMBINE TABULAR & SPATIAL DATA----------------------
+#Merge data from Google Sheet with Rayon shp file
+Rshp <- merge(x=Admin2,y=Admin2data_current, by.x="admin2pcod", by.y= "district_ID")
+
+DistsNumb <- sum(!is.na(Rshp@data$district_name))                               # get number of districts covered...
+
+Rshp <- st_simplify(st_as_sf(Rshp), dTolerance = 0.5)
+Rshp <- st_transform(x = Rshp, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+Rshp <- as(Rshp,"Spatial")
+
+Admin1 <- st_simplify(st_as_sf(Admin1), dTolerance = 0.5)
+Admin1 <- st_transform(x = Admin1, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+Admin1 <- as(Admin1,"Spatial")
+
+##-------------------------- CREATE MAP LABELS ----------------------
+#GOVERNORATE LABELS
+# Get polygons centroids
+centroids <- as.data.frame(centroid(Admin1))
+colnames(centroids) <- c("lon", "lat")
+centroids <- data.frame("ID" = 1:nrow(centroids), centroids)
+
+# Create SpatialPointsDataFrame object
+coordinates(centroids) <- c("lon", "lat") 
+proj4string(centroids) <- sp::proj4string(Admin1) # assign projection
+centroids@data <- sp::over(x = centroids, y = Admin1, returnList = FALSE)
+centroids1 <- as.data.frame(centroid(Admin1))
+colnames(centroids1) <- c("lon", "lat")
+centroids@data <- cbind(centroids@data, centroids1)
+
+#YEMEN LABEL
+YEMl <- as.data.frame(cbind(48.5164,15.5527))
+colnames(YEMl) <- c("lon", "lat")
+YEMl <- data.frame("ID" = 1:nrow(YEMl), YEMl)
+coordinates(YEMl) <- c("lon", "lat") 
+proj4string(YEMl) <- proj4string(Admin1)
+UKRl1<- as.data.frame(cbind(48.5164,15.5527))
+YEMl@data<-cbind(YEMl@data, "YEMEN", UKRl1 )
+colnames(YEMl@data) <- c("index","name","lon", "lat")
+
+## For drop down selection in data explorer and plot tabs 
+
+smeb <- data.frame(SMEB = c(rep("SMEB Wash", 4), rep("SMEB Wash", 5)),                                  # define SMEB content table
+                   Category = c(rep("Non-Food Items", 3), "Water", rep("Food Items", 5)),
+                   Item = c("Soap", "Laundry powder", "Sanitary Napkins", "Cubic meter water",
+                            "Wheat flour", "Beans dry","Vegetable oil", "Sugar", "Salt"),
+                   Quantity = c("10.5 ", "20 Kg", "2 Boxes", "3.15 m^3", "7.5 Kg", "10 ", "8 ", "2.5 ", "1Kg"))
+
+cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",        # define color palette for plot lines
+               "rgb(86,179,205)",  "rgb(246,158,97)",  "rgb(255,246,122)",
+               "rgb(210,203,184)", "rgb(247,172,172)", "rgb(172,172,173)",
+               "rgb(210,228,208)", "rgb(171,217,230)", "rgb(251,207,176)",
+               "rgb(255,251,189)", "rgb(233,229,220)")
+
+#DROP DOWN MENU SELECTIONS 
+## Drop-down for Plot & Data Explorer + map parameters
+# To be updated whenever adding new item
+
+vars <- c(
+  "WASH SMEB"="WASH_SMEB", "Food SMEB"="Food_SMEB",
+  "Parallel Exchange Rates"="exchange_rates", "Wheat Flour" = "wheat_flour",
+  "Rice" = "rice", "Dry Beans" = "beans_dry",
+  "Canned Beans" = "beans_can", "Lentils" = "lentil",
+  "Vegetable Oil" = "vegetable_oil", "Sugar" = "sugar",
+  "Salt" = "salt", "Potato" = "potato",
+  "Onion" = "onion", "Petrol" = "petrol",
+  "Diesel" = "diesel", "Bottled Water"="bottled_water",
+  "Treated Water"="treated_water", "Soap"="soap",
+  "Laundry Powder"="laundry_powder", "Sanitary Napkins"="sanitary_napkins",
+  "Water Trucking"= "cost_cubic_meter"
+)
+
+title.legend <- c("WASH SMEB Cost", "Food SMEB Cost", "YER to 1 USD", "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)", 
+                  "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 L)", "Price (1 L)", "Price (0.75 L)", "Price (10 L)", 
+                  "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)",
+                  rep("	% of traders", 28))
+unit <- c(rep(" YER", 21),
+          rep(" %", 28))
+
+## Setting custom maps color palettes for all items:
+pal1 <- colorRamp(c("#ADFFA5", "#A7383D", "#420A0D"), interpolate="linear")
+pal2 <- colorRamp(c("#C3FFFD", "#6EFBF6", "#009F99", "#00504D"), interpolate="linear")
+pal3 <- colorRamp(c("#C9C3F8", "#5D52AD", "#FAD962", "#AA9239"), interpolate="linear")
+pal4 <- colorRamp(c("#FFD7D9", "#FF535B", "#FB000D", "#830007", "#480004"), interpolate="linear")
+pal5 <- colorRamp(c("#C7C0FF", "#7A6AFF", "#1501B9", "#0A005D", "#050033"), interpolate="linear")
+
+palette <- c(pal1, "Greens", "Greens", pal2, "YlOrBr", pal2, "BuPu","RdPu", pal3, "Greens", pal3,
+             "Greens", "Greens", "YlOrBr", pal4, pal5, pal2, "RdPu", "Purples", "BuPu", pal3, 
+             rep("YlOrBr", 28))                                                 # keep same palette for the market functionality indicators
+
+indicator_group <- c(rep("I. Indices", 2), 
+                     "II. Currencies",
+                     rep("III. Food items", 10),
+                     rep("IV. Fuels", 2),
+                     rep("V. Water", 2),
+                     rep("VI. Non-food items", 3),
+                     "V. Water",
+                     rep("VI. Other indicators", 28))
+
+# Indicator_list => will determine drop down list + legend + palettes for maps
+vars_functionnality <- colnames(indicators)[-(1:3)]
+names(vars_functionnality) <- vars_functionnality
+
+indicator_list <- data.frame(Item=names(c(vars, vars_functionnality)),
+                             Variable=unname(c(vars, vars_functionnality)),
+                             Group = indicator_group,
+                             Legend = title.legend,
+                             Unit = unit,
+                             Palette = I(palette))
+
+plot_location_list <- Admin2table %>%                                                 # Define location list
+  ungroup %>%
+  dplyr::rename(Governorate=government_name, District=district_name) %>%
+  dplyr::select(Governorate, District) %>%
+  arrange(Governorate, District) %>%
+  dplyr::filter(!duplicated(District))
+
+dates <- sort(unique(Admin2table$date2))                                            # define list with date range in data
+dates_min  <- as.Date("2020-01-01")                                               # set minimum date to be displayed
+dates_max  <- max(Admin2table$date2, na.rm = T)                                     # maximum date in data
+dates_max2 <- sort(unique(Admin2table$date2), decreasing=T)[2]                      # second-latest date
+
+
 # UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 
 ui <- function(){
@@ -20,19 +404,19 @@ ui <- function(){
 
                           tags$head(
                             # Include our custom CSS
-                            includeCSS("AdminLTE.css"),
+                            shiny::includeCSS("AdminLTE.css"),
                             shiny::includeCSS( "bootstrap.css"), #added
-                            includeCSS(path = "shinydashboard.css"),
+                            shiny::includeCSS(path = "shinydashboard.css"),
                             br()#added
                           ),
 
                           #LEAFLET MAP
                           # If not using custom CSS, set height of leafletOutput to a number instead of percent
-                          leafletOutput("map1", width="100%", height="100%"), #BRING IN LEAFLET MAP, object created in server.R
+                          leaflet::leafletOutput("map1", width="100%", height="100%"), # BRING IN LEAFLET MAP, object created in server.R
                           tags$head(tags$style(".leaflet-control-zoom { display: none; }
 
                                             #controls {height:90vh; overflow-y: auto; }
-                                              ")), #remove map zoom controls
+                                              ")),                              # remove map zoom controls
 
                           tags$head(tags$style(
                             type = "text/css",
@@ -41,8 +425,7 @@ ui <- function(){
                            margin-top: 25px;
                          }"
                           )),
-                          #https://stackoverflow.com/questions/37861234/adjust-the-height-of-infobox-in-shiny-dashboard
-
+                          # https://stackoverflow.com/questions/37861234/adjust-the-height-of-infobox-in-shiny-dashboard
 
                           #SIDE PANEL
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
@@ -69,7 +452,7 @@ ui <- function(){
                                         #h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
                                         #   tags$strong(DistsNumb), "districts in ", tags$strong(currentD))),
 
-                                        selectInput("variable1", h4("Select Variable Below"), vars, selected = "SMEB"), #linked text
+                                        selectInput("variable1", h4("Select Variable Below"), vars, selected = "Food_SMEB"), #linked text
 
 
                                         h5(textOutput("text3")), #extra small text which had to be customized as an html output in server.r (same with text1 and text 2)
@@ -82,7 +465,7 @@ ui <- function(){
 
                                         #new data table
                                         hr(),
-                                        selectInput(inputId= "varDateSelect", label = h4("Select Month of Data Collection"), choices=NULL, selected = (("varDateSelect"))),#linked date stuff
+                                        selectInput(inputId= "varDateSelect", label = h4("Select Month of Data Collection"), choices=NULL, selected = (("varDateSelect"))), # linked date stuff
                                         h5("Please select a district to enable month selection"),
                                         h5(textOutput("text_DT")),
                                         DT::dataTableOutput("out_table_obs",height = "auto", width = "100%"),
@@ -323,88 +706,82 @@ ui <- function(){
              ),
 
 
-
-
-             #conditionalPanel("false", icon("crosshairs")),
-             #)
-
-
              #### Data Explorer Page ######################################################################
 
-             # tabPanel("Data Explorer", icon = icon("table"),
-             # 
-             #          sidebarLayout(
-             #            sidebarPanel(
-             # 
-             #              radioGroupButtons("table_aggregation",
-             #                                label = "Aggregation level:",
-             #                                choices = c("District", "Key Informant"),
-             #                                selected = "District",
-             #                                justified = TRUE
-             #              ),
-             # 
-             #              conditionalPanel(condition = "input.table_aggregation != 'District'",
-             #                               # condition = TRUE,
-             #                               tags$i(h6("Note: Only district-level data can be displayed in the table on the right.
-             #                                                You can download data on either aggregation level by setting your desired
-             #                                                parameters and clicking on the download button below.",
-             #                                         style="color:red")),
-             #              ),
-             # 
-             #              hr(),
-             # 
-             #              conditionalPanel(condition = "input.table_aggregation == 'District'",
-             #                               # condition = TRUE,
-             #                               pickerInput("table_show_vars",
-             #                                           label = "Indicators:",
-             #                                           options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
-             #                                           choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list),
-             #                                           selected = c("WASH SMEB", "Food SMEB", "Parallel Exchange Rates"),
-             #                                           multiple = TRUE
-             #                               )
-             #              ),
-             # 
-             #              conditionalPanel(condition = "input.table_aggregation == 'Key Informant'",
-             #                               pickerInput("table_show_vars_ki",
-             #                                           label = "Indicators:",
-             #                                           choices = names(full_data),
-             #                                           options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
-             #                                           selected = names(full_data),
-             #                                           multiple = TRUE
-             #                               )
-             #              ),
-             # 
-             #              pickerInput("table_district",
-             #                          label = "Districts:",
-             #                          choices = lapply(split(plot_location_list$District, plot_location_list$Governorate), as.list),
-             #                          options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
-             #                          selected = plot_location_list$District,
-             #                          multiple = TRUE
-             #              ),
-             # 
-             #              sliderTextInput("table_date_select",
-             #                              "Months:",
-             #                              force_edges = TRUE,
-             #                              choices = dates,
-             #                              selected = c("2021-03-01", "2021-03-01")
-             #                              # ,selected = c(dates_min, dates_max)
-             #              ),
-             # 
-             #              hr(),
-             # 
-             #              actionButton("table_reset", "Reset filters"),
-             # 
-             #              downloadButton("downloadData", "Download as CSV"),
-             # 
-             #              width = 3
-             #            ),
-             # 
-             #            mainPanel(
-             #              DT::dataTableOutput("table", width = "100%", height = "100%")
-             #              # ,width = 9
-             #            )
-             #          )
-             # ),
+             tabPanel("Data Explorer", icon = icon("table"),
+
+                      sidebarLayout(
+                        sidebarPanel(
+
+                          radioGroupButtons("table_aggregation",
+                                            label = "Aggregation level:",
+                                            choices = c("District", "Key Informant"),
+                                            selected = "District",
+                                            justified = TRUE
+                          ),
+
+                          conditionalPanel(condition = "input.table_aggregation != 'District'",
+                                           # condition = TRUE,
+                                           tags$i(h6("Note: Only district-level data can be displayed in the table on the right.
+                                                            You can download data on either aggregation level by setting your desired
+                                                            parameters and clicking on the download button below.",
+                                                     style="color:red")),
+                          ),
+
+                          hr(),
+
+                          conditionalPanel(condition = "input.table_aggregation == 'District'",
+                                           # condition = TRUE,
+                                           pickerInput("table_show_vars",
+                                                       label = "Indicators:",
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list),
+                                                       selected = c("WASH SMEB", "Food SMEB", "Parallel Exchange Rates"),
+                                                       multiple = TRUE
+                                           )
+                          ),
+
+                          conditionalPanel(condition = "input.table_aggregation == 'Key Informant'",
+                                           pickerInput("table_show_vars_ki",
+                                                       label = "Indicators:",
+                                                       choices = names(full_data),
+                                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       selected = names(full_data),
+                                                       multiple = TRUE
+                                           )
+                          ),
+
+                          pickerInput("table_district",
+                                      label = "Districts:",
+                                      choices = lapply(split(plot_location_list$District, plot_location_list$Governorate), as.list),
+                                      options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                      selected = plot_location_list$District,
+                                      multiple = TRUE
+                          ),
+
+                          sliderTextInput("table_date_select",
+                                          "Months:",
+                                          force_edges = TRUE,
+                                          choices = dates,
+                                          selected = c("2021-03-01", "2021-03-01")
+                                          # ,selected = c(dates_min, dates_max)
+                          ),
+
+                          hr(),
+
+                          actionButton("table_reset", "Reset filters"),
+
+                          downloadButton("downloadData", "Download as CSV"),
+
+                          width = 3
+                        ),
+
+                        mainPanel(
+                          DT::dataTableOutput("table", width = "100%", height = "100%")
+                          # ,width = 9
+                        )
+                      )
+             ),
 
 
              tabPanel(strong("SMEB Tracker"),
@@ -451,7 +828,7 @@ ui <- function(){
 
                         tags$head(
                           # Include our custom CSS
-                          includeCSS("styles.css"),
+                          shiny::includeCSS("styles.css"),
                           style=" { height:90vh; overflow-y: scroll; }
                                               "),
 
@@ -572,26 +949,23 @@ ui <- function(){
 
 # SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER
 
-server<-function(input, output,session) {
+server <- function(input, output,session) {
   #_________________________create map consisting of several layers and customization___________________
-  output$map1 <- renderLeaflet({  #initiate map
+  output$map1 <- renderLeaflet({                                                # initiate map
     leaflet(options = leafletOptions(minZoom = 4.5)) %>%
-      addProviderTiles(providers$Esri.WorldGrayCanvas) %>% #base map, can be changed
-      setView(50.911019,15.889618, zoom = 6.5)
-    # setMaxBounds( lng1 = -66.9
-    #               , lat1 = 37
-    #               , lng2 = -66.1
-    #               , lat2 = 37.8 )
-  })
-
-  #"observe" inputs to define variables for map colors, titles, legends and subset district data
+      addProviderTiles(providers$Esri.WorldGrayCanvas) %>%                      # Base map, can be changed
+      setView(50.911019, 15.889618, zoom = 6.5)
+    # setMaxBounds( lng1 = -66.9, lat1 = 37, lng2 = -66.1, lat2 = 37.8 )
+    })
+  
+  # "observe" inputs to define variables for map colors, titles, legends and subset district data
   observe({
     VARIA <- input$variable1
     metacol <- c("admin2pcod", "admin1name", "admin1pcod", "admin2name", "admin2refn")
     metacol2 <- c("num_obs", "date2")
     
-    # VARIA = "WASH_SMEB"
-    dataM <- Rshp[,c(metacol, VARIA, metacol2)] #subset VARIA column
+    # VARIA = "Food_SMEB"
+    dataM <- Rshp[,c(metacol, VARIA, metacol2)]                                 # subset VARIA column
     mypal <- colorNumeric(palette = indicator_list[indicator_list$Variable==VARIA, "Palette"][[1]],
                           domain = dataM@data[,6],
                           na.color = "#D0CFCF",
@@ -601,45 +975,29 @@ server<-function(input, output,session) {
     en <- " "
     unitA <- indicator_list[indicator_list$Variable==VARIA, "Unit"]
     title_legend <- indicator_list[indicator_list$Variable==VARIA, "Legend"]
-    
-    #Have a vector of all of the districts that currently have no data for the current month
-    dataM_NAs<-dataM@data%>%
-      filter(is.na(date2))%>%
-      pull(admin2pcod)
 
-    #get name of variable selected
-    call_name<-colnames(dataM@data[6])
+    dataM_NAs <- dataM@data %>% dplyr::filter(is.na(date2))%>% pull(admin2pcod) # Have a vector of all of the districts that currently have no data for the current month
+    call_name <- colnames(dataM@data[6])                                        # get name of variable selected
 
-    #Need to subset out for with districts have had values in the past that arent in this current month, get that as a list
-    Admin2data_out <- Admin2table %>% #subset out recent month dates to attach to shapefile
-      filter(district_ID %in% dataM_NAs)%>% #next only keep data from places that have had an observation in the past from the right varialbe
-      filter(!is.na(get(call_name)))
+    # Need to subset out for with districts have had values in the past that arent in this current month, get that as a list
+    Admin2data_out <- Admin2table %>%                                           # subset out recent month dates to attach to shapefile
+      dplyr::filter(district_ID %in% dataM_NAs) %>%                             # next only keep data from places that have had an observation in the past from the right varialbe
+      dplyr::filter(!is.na(get(call_name)))
 
     Admin2data_out <- Admin2data_out[!duplicated(Admin2data_out$district_name),]
+    Rshp@data <- Rshp@data %>% dplyr::mutate(alt_dist = (admin2pcod %in% Admin2data_out$district_ID)*1 %>% dplyr::na_if(0))
 
-    Rshp@data<-Rshp@data%>%
-      dplyr::mutate(alt_dist = admin2pcod %in% Admin2data_out$district_ID)
-    Rshp@data$alt_dist<-Rshp@data$alt_dist*1
-    Rshp@data$alt_dist<-(dplyr::na_if(Rshp@data$alt_dist,0))
+    old_dist <- Rshp[,c(metacol, "alt_dist")]                                   # final dataset that needs to be pulled from the right Rshp (this is after you dynamically pull out the right data depending on what is selected)
+    old_dist_alt <- sf::st_as_sf(old_dist) %>%                                  # convert the data list (shapefile list) to a more useable list we can filter from while holding the coordinates https://gis.stackexchange.com/questions/156268/r-filter-shapefiles-with-dplyr/156290
+      dplyr::filter(alt_dist == 1)                                              # actually do a filter on the stuff you want (this corresponds to the Rshp 31 and the 1 and NA we did before), basically its a janky way to do a clip on the fly from a GIS perspective
+    old_dist_alt_sp <- sf::as_Spatial(old_dist_alt)                             # convert back to a spatial datalist https://gis.stackexchange.com/questions/239118/r-convert-sf-object-back-to-spatialpolygonsdataframe
+    pal_alt <- colorBin(palette="#E5E5E5", domain=old_dist_alt_sp@data[,"alt_dist"]) # create a new color pallete for the new over lay
 
-    #final dataset that needs to be pulled from the right Rshp (this is after you dynamically pull out the right data depending on what is selected)
-    old_dist <- Rshp[,c(metacol, "alt_dist")]
-    #convert the data list (shapefile list) to a more useable list we can filter from while holding the coordinates https://gis.stackexchange.com/questions/156268/r-filter-shapefiles-with-dplyr/156290
-    old_dist_alt<-sf::st_as_sf(old_dist)
-    #actually do a filter on the stuff you want (this corresponds to the Rshp 31 and the 1 and NA we did before), basically its a janky way to do a clip on the fly from a GIS perspective
-    old_dist_alt<-old_dist_alt%>%filter(alt_dist == 1)
-    #convert back to a spatial datalist https://gis.stackexchange.com/questions/239118/r-convert-sf-object-back-to-spatialpolygonsdataframe
-    old_dist_alt_sp<-sf::as_Spatial(old_dist_alt)
-    #create a new color pallete for the new over lay
-    pal_alt<-colorBin( palette="#E5E5E5", domain=old_dist_alt_sp@data[,"alt_dist"])
+    map1 <- leafletProxy("map1") %>%                                            # leaflet map proxy updates created map to reflect obeserved changes
+      clearShapes() %>%                                                         # clear polygons, so new ones can be added
+      clearControls()%>%                                                        # reset zoom etc
 
-    #leaflet map proxy updates created map to reflect obeserved changes
-    map1<-leafletProxy("map1") %>%
-      clearShapes() %>% #clear polygons, so new ones can be added
-      clearControls()%>% #reset zoom etc
-
-
-      addLabelOnlyMarkers(centroids, #ADD governorate LABELS
+      addLabelOnlyMarkers(centroids,                                            # ADD governorate LABELS
                           lat=centroids$lat,
                           lng=centroids$lon,
                           label=as.character(centroids$admin1name),
@@ -656,7 +1014,8 @@ server<-function(input, output,session) {
                               "font-family"= "Helvetica",
                               "font-weight"= 600)
                           )) %>%
-      addLabelOnlyMarkers(YEMl, lat=YEMl$lat, #Add Yemen label
+
+      addLabelOnlyMarkers(YEMl, lat=YEMl$lat,                                   # Add Yemen label
                           lng=YEMl$lon,
                           label=as.character(YEMl$name),
                           labelOptions = leaflet::labelOptions(
@@ -674,7 +1033,7 @@ server<-function(input, output,session) {
                               "letter-spacing"= "3px")
                           )) %>%
 
-      addPolygons(data= dataM,    # add subsetted district shapefiles
+      addPolygons(data= dataM,                                                  # Add subsetted district shapefiles
                   color = "grey",
                   weight = 0.8,
                   label= paste(dataM$admin2name," (", pLa, dataM@data[,6],en, ")"),
@@ -684,25 +1043,22 @@ server<-function(input, output,session) {
                   fillColor =  (~mypal((dataM@data[,6]))),#custom palette
                   fillOpacity = .8,
                   layerId = ~admin2pcod,
-                  highlightOptions = highlightOptions(color = "black", weight = 2,
-                                                      bringToFront = FALSE, sendToBack = FALSE),
-                  popup = paste0(dataM$admin2name, "<br>",'<h7 style="color:black;">',
-                                 pLa, "<b>"," ", dataM@data[,6],unitA, "</b>", '</h7>'),
+                  highlightOptions = highlightOptions(color = "black", weight = 2, bringToFront = FALSE, sendToBack = FALSE),
+                  popup = paste0(dataM$admin2name, "<br>",'<h7 style="color:black;">', pLa, "<b>"," ", dataM@data[,6],unitA, "</b>", '</h7>'),
       ) %>%
-      addPolygons(data= old_dist_alt_sp,    # this is you clipped data file of previous districts (make sure it is below your main district on or it will not be seen)
+      addPolygons(data= old_dist_alt_sp,                                        # Clipped data file of previous districts (make sure it is below your main district on or it will not be seen)
                   color = "red",
                   weight = 1.5,
                   label = paste0(old_dist_alt_sp$admin2name,":previous ",pLa2," data present"), #added a different label that pops up
                   opacity = .40,
                   smoothFactor = 0.5,
                   fill = TRUE,
-                  fillColor = ~pal_alt(old_dist_alt_sp@data[,"alt_dist"]), #custom palette as stated before
+                  fillColor = ~pal_alt(old_dist_alt_sp@data[,"alt_dist"]),      # Custom palette as stated before
                   fillOpacity = .8,
                   layerId = ~admin2pcod,
-                  highlightOptions = highlightOptions(color = "black", weight = 2,
-                                                      bringToFront = FALSE, sendToBack = FALSE),
+                  highlightOptions = highlightOptions(color = "black", weight = 2, bringToFront = FALSE, sendToBack = FALSE),
       )%>%
-      addPolylines(data = Admin1, #add governorate lines for reference
+      addPolylines(data = Admin1,                                               # Add governorate lines for reference
                    weight= 3.25,
                    stroke = T,
                    color = "black",
@@ -712,7 +1068,7 @@ server<-function(input, output,session) {
 
     map1 %>% clearControls()
 
-    #needed to make a custom label because i hate R shiny https://stackoverflow.com/questions/52812238/custom-legend-with-r-leaflet-circles-and-squares-in-same-plot-legends
+    # Needed to make a custom label because i hate R shiny https://stackoverflow.com/questions/52812238/custom-legend-with-r-leaflet-circles-and-squares-in-same-plot-legends
     colors<-c("white", "#D3D3D3", "#D3D3D3")
     labels<-c("Districts with previous data", "Governorate borders", "District borders")
     sizes<-c("20", "20", "20")
@@ -738,31 +1094,25 @@ server<-function(input, output,session) {
       return(addLegend(map1,"topleft", colors = legend_colors, labels = legend_labels, opacity = 0.5))
     }
 
-    #add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
-    map1 %>% addControl(c(""), position = "topleft" ) %>% addControl(c(""), position = "topleft" )
+    map1 %>% addControl(c(""), position = "topleft" ) %>% addControl(c(""), position = "topleft" ) # add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
+    map1 %>% addScaleBar("topleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T)) # add scale bar
+    map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)            # add new legend
 
-    #add scale bar
-    map1 %>% addScaleBar("topleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T))
-
-    #add new legend
-    map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)
-
-    #add legend for var
+    # add legend for var
     map1 %>%
-      addLegend_decreasing("topleft", pal = mypal, values =  dataM@data[,6], #update legend to reflect changes in selected district/variable shown
+      addLegend_decreasing("topleft", pal = mypal, values =  dataM@data[,6], # update legend to reflect changes in selected district/variable shown
                            labFormat=labelFormat(suffix=unitA),
                            title = title_legend,
                            opacity = 5,
                            decreasing = T)
 
-
-  })#end of MAP
+  })                                                                            # end of MAP
 
   #_________________________create reactive objects for use in the chart___________________
   clicked_state<- eventReactive(input$map1_shape_click,{ #capture ID of clicked district
     return(input$map1_shape_click$id)
   })
-
+ 
   clicked_state_gov<-eventReactive(input$map1_shape_click,{
     gov_id<- substr(input$map1_shape_click$id,1,nchar(input$map1_shape_click$id)-2)
     return(gov_id)
@@ -793,7 +1143,6 @@ server<-function(input, output,session) {
     all_dat
   })
 
-
   chartData1<-reactive({  #subset JMMI data table based on variable of interest (soap, water etc)
     metacol<-c("date", "government_name.x",  "government_ID.x", "district_name", "district_ID")
     var <- as.character(input$variable1)
@@ -819,51 +1168,41 @@ server<-function(input, output,session) {
   })
 
   output$hcontainer <- renderHighchart({
-    event <- (input$map1_shape_click) #Critical Line!!!
+    event <- (input$map1_shape_click)                                           # Critical Line!!!
 
-    (validate(need(event$id != "",
-                   "Please click on a district to display its history.")))
+    (validate(need(event$id != "", "Please click on a district to display its history.")))
 
-    ChartDat<-chartData1() #define filtered table that is reactive element chartData1
+    ChartDat<-chartData1()                                                      # Define filtered table that is reactive element chartData1
     #y_min<- chartDatMIN()
     #y_max<- chartDatMAX()
 
-    chosenD<- paste0(na.omit(unique(ChartDat[,2])),", ",na.omit(unique(ChartDat[,4]))) #TITLE FOR CHART (governorate and district name)
+    chosenD <- paste0(na.omit(unique(ChartDat[,2])),", ", na.omit(unique(ChartDat[,4]))) # TITLE FOR CHART (governorate and district name)
 
-    highchart()%>% #high chart
+    highchart() %>% # high chart
       hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%b %Y')) %>%
-
       #data for national
-      hc_add_series(data=ChartDat, type = "line", hcaes(date2, nat_val), color = "dodgerblue", name=paste(chartNAME(),"-National"))%>%
+      hc_add_series(data=ChartDat, type = "line", hcaes(date2, nat_val), color = "dodgerblue", name=paste(chartNAME(),"-National")) %>%
       #data for governorate
-      hc_add_series(data=ChartDat, type = "line", hcaes(date2, governorate_val), color = "forestgreen", name=paste(chartNAME(),"-Governorate"))%>%
+      hc_add_series(data=ChartDat, type = "line", hcaes(date2, governorate_val), color = "forestgreen", name=paste(chartNAME(),"-Governorate")) %>%
       #data for district
-      hc_add_series(data=ChartDat, type = "line", hcaes(date2, variableSEL), color="#4F4E51", name=paste(chartNAME(),"-District"))%>%
-
+      hc_add_series(data=ChartDat, type = "line", hcaes(date2, variableSEL), color="#4F4E51", name=paste(chartNAME(),"-District")) %>%
+      
       hc_yAxis(tithcle=list(text=paste0(chartNAME()," in YER")), opposite = FALSE
                #,min= as.numeric(y_min), max= as.numeric(y_max)
-      )%>%
-      hc_title(text=chosenD)%>%
-      hc_add_theme(hc_theme_gridlight())%>%
-      hc_plotOptions(line = list(
-        lineWidth=1.5,
-        dataLabels = list(enabled = FALSE)))
+      ) %>%
+      hc_title(text=chosenD) %>%
+      hc_add_theme(hc_theme_gridlight()) %>%
+      hc_plotOptions(line = list(lineWidth=1.5, dataLabels = list(enabled = FALSE)))
 
   })
   #building the table for the observations and prices
   #BUILDING TABLE  https://stackoverflow.com/questions/32149487/controlling-table-width-in-shiny-datatableoutput
   output$out_table_obs<-DT::renderDataTable({
-
-    ChartDat_Date<-chartData1()#make a new dataset to play around with from the original state data one above
-
-    #https://stackoverflow.com/questions/40152857/how-to-dynamically-populate-dropdown-box-choices-in-shiny-dashboard
-
-    ChartDat_Date_filter<-ChartDat_Date%>% #filter out based on what was selected from the varDateSelect
-      filter(date == input$varDateSelect)
-
-    chosenD_Date<- paste0(na.omit(unique(ChartDat_Date[,2])),", ",na.omit(unique(ChartDat_Date[,4])))#make a quick title for the data table
-
-    mat_date_test<-matrix(c(round(ChartDat_Date_filter[6],2),
+    ChartDat_Date<-chartData1()                                                 # make a new dataset to play around with from the original state data one above // # https://stackoverflow.com/questions/40152857/how-to-dynamically-populate-dropdown-box-choices-in-shiny-dashboard
+    ChartDat_Date_filter<-ChartDat_Date%>%                                      # filter out based on what was selected from the varDateSelect
+      dplyr::filter(date == input$varDateSelect)
+    chosenD_Date <- paste0(na.omit(unique(ChartDat_Date[,2])),", ",na.omit(unique(ChartDat_Date[,4]))) # make a quick title for the data table
+    mat_date_test <- matrix(c(round(ChartDat_Date_filter[6],2),
                             round(ChartDat_Date_filter[8],2),
                             round(ChartDat_Date_filter[9],2),
                             ChartDat_Date_filter[10],
@@ -871,29 +1210,19 @@ server<-function(input, output,session) {
                             ChartDat_Date_filter[12]),
                           nrow=2, ncol=3, byrow = T,
                           dimnames=list(c("Median Price (YER)","Number of Markets Assessed"),c(paste0("District: \n",na.omit(unique(ChartDat_Date[,4]))),paste0("Governorate: \n",na.omit(unique(ChartDat_Date[,2]))),"Yemen")))
-
-    DT::datatable(mat_date_test,options = list(dom = 't')
-                  #, width = "100%" # test to delete
-                  )
+    DT::datatable(mat_date_test,options = list(dom = 't'))
   })
 
 
-  #output infobox for the info exchange rate
+  # output infobox for the info exchange rate
   output$info_exchange<-renderValueBox({
     exchange_data<-AdminNatTable
     exchange_data$date<-as.yearmon(exchange_data$date)
     exchange_date<-exchange_data%>%
-      filter(date == input$varDateSelect)
+      dplyr::filter(date == input$varDateSelect)
     exchange_rate<-exchange_date[1,10]
-
-    valueBox(
-      value = exchange_rate,
-      subtitle="YER to 1 USD",
-      icon = icon("dollar"),
-      #fill=T,
-      color = "green")
-
-  })
+    valueBox(value = exchange_rate, subtitle="YER to 1 USD", icon = icon("dollar"), color = "green") # fill=T, dropped argument
+    })
 
   output$text1 <- renderUI({ #customised text elements
     HTML(paste("Coordinate System:  WGS 1984",
@@ -902,45 +1231,43 @@ server<-function(input, output,session) {
                "Please do NOT use Microsoft Edge for best user interaction",
                sep="<br/>"), '<style type="text/css"> .shiny-html-output { font-size: 11px; line-height: 12px;
          font-family: Helvetica} </style>')
-  })
-  #
+    })
+
   output$text2 <- renderUI({
     HTML(paste("<i>Note: Data displayed on this map should be interpreted as indicative.
                In addition, designations and boundaries used here do not imply acceptance
                by REACH partners and associated donors.</i>",
                sep="<br/>"), '<style type="text/css"> .shiny-html-output { font-size: 11px; line-height: 11px;
          font-family: Helvetica} </style>')
-  })
+    })
 
-  output$text3 <- renderText({ #LARGE TEXT ABOVE CHART
+  output$text3 <- renderText({                                                  # LARGE TEXT ABOVE CHART
     paste(chartNAME(), " ", "Medians Over Time")
-  })
+    })
 
   output$text_DT<-renderText({
     paste0(chartNAME(),", Median Monthly Costs, and Number of Markets Assessed")
-  })
+    })
 
   output$text4 <- renderUI({
     HTML(paste("<i>For more information, please visit our",a("REACH Website", target="_blank", href="https://www.reach-initiative.org"),
                "or contact us directly at yemen@reach-initiative.org.</i>"), '<style type="text/css"> .shiny-html-output { font-size: 11px; line-height: 11px;
          font-family: Helvetica} </style>')
-  })
+    })
 
-  #FRoM ONLINE https://github.com/ua-snap/shiny-apps/blob/master/cc4liteFinal/server.R
+  # FRoM ONLINE https://github.com/ua-snap/shiny-apps/blob/master/cc4liteFinal/server.R
 
   #######################
   #SMEB tracker
   #######################
-  #Goal - build system that can adapt to X# of months back and benchmark at YY%
-  #Data needed - national but may need to clip to districts of each individual one based on methodology
-  #So pull number of district from most recent month and clip back based on X# of months.
-  #then build a table function that allows for that stuff to be adapted
+  # Goal - build system that can adapt to X# of months back and benchmark at YY%
+  # Data needed - national but may need to clip to districts of each individual one based on methodology
+  # So pull number of district from most recent month and clip back based on X# of months.
+  # then build a table function that allows for that stuff to be adapted
 
-  #build the dataset
-
-  #SMEB DATASET
+  # build the dataset
+  # SMEB DATASET
   output$table_smeb<-DT::renderDataTable({
-    #observe({
     #https://stackoverflow.com/questions/50912519/select-the-number-of-rows-to-display-in-a-datatable-based-on-a-slider-input
     time<-input$months
     percent_time<- input$percent/100
@@ -959,17 +1286,15 @@ server<-function(input, output,session) {
 
     national_data_pull<-dplyr::filter(national_data, date2 %in% month_list)%>%
       dplyr::select(-c(date,num_obs,exchange_rates))
-
-
+    
     national_data_pull<-national_data_pull%>%
       reshape2::melt("date2")%>%
       reshape2::dcast(variable ~ date2)%>%
       round_df(.,0) %>% dplyr::select(variable, as.character(month_list))
 
     col_data_pull<-ncol(national_data_pull)
-
-    name_perc_change<-paste0(colnames(national_data_pull[col_data_pull]),
-                             " percent change from standard SMEB")
+    name_perc_change<-paste0(colnames(national_data_pull[col_data_pull]), " percent change from standard SMEB")
+    
     #Add SMEB base costs
     #https://stackoverflow.com/questions/13502601/add-insert-a-column-between-two-columns-in-a-data-frame
     national_data_pull<-national_data_pull%>%
@@ -990,20 +1315,13 @@ server<-function(input, output,session) {
     # This is where the percentage change are calculated. It was  calculated compared to some "standard" SMEB value, which is weird
     # It now computes percentage change between t and t-n for each month n
     #https://duckduckgo.com/?q=dynamic+naming+in+mutate+R&t=brave&ia=web
-    national_data_pull<-national_data_pull%>%
-      # dplyr::mutate_at(., .vars = c(3:ncol(.)),.funs = list(`percent change from standard SMEB`= ~((.-(national_data_pull[,2]))/(national_data_pull[,2]))))
-    dplyr::mutate_at(., .vars = c(3:ncol(.)),
-                     .funs = list('Percentage_change' = ~(((national_data_pull[,2])-.)/(.))),
-                     .names = "{fn}_{col}")
+    national_data_pull <- national_data_pull %>%
+      dplyr::mutate_at(., .vars = c(3:ncol(.)), .funs = list('change' = ~(((national_data_pull[,2])-.)/(.)))) %>%
+      dplyr::rename_at(vars(contains("_change")), ~paste0("% change between ", ., " and ",  month_list[1])) %>% 
+      setNames(gsub("_change", "", colnames(.)))
 
-    #get number of columns now we will use later in the formatting of the table
-    columns_of_data_end<-ncol(national_data_pull)
-
-    #get rid of the weird naming from the mutate_at
-    names(national_data_pull) <- gsub("_", " ", names(national_data_pull))
-
-    #maybe keep for later
-    #dplyr::mutate(.,!!name_perc_change := (((.[,col_data_pull]-.[,2])/(.[,2]))))
+    columns_of_data_end <- ncol(national_data_pull)                             # get number of columns now we will use later in the formatting of the table
+    names(national_data_pull) <- gsub("_", " ", names(national_data_pull))      # get rid of the weird naming from the mutate_at
 
     #Render the output DT
     #https://stackoverflow.com/questions/60659666/changing-color-for-cells-on-dt-table-in-shiny
@@ -1012,26 +1330,22 @@ server<-function(input, output,session) {
                   options = list(
                     autoWidth=F,
                     searching = F, paging = F, scrollX=T, fixedColumns = list(leftColumns = 2, rightColumns = 0)),
-                  rownames = F)%>%
-      formatStyle(columns = 1, color = "white", backgroundColor = "grey", fontWeight = "bold")%>%
-      DT::formatPercentage(columns = c(columns_of_data_begin:columns_of_data_end),2)%>%
+                  rownames = F) %>%
+      formatStyle(columns = 1, color = "white", backgroundColor = "grey", fontWeight = "bold") %>%
+      DT::formatPercentage(columns = c(columns_of_data_begin:columns_of_data_end),2) %>%
       formatStyle(columns = c(columns_of_data_begin:columns_of_data_end),
                   color = styleInterval(c(-percent_time,percent_time), c('grey', 'black','white')),
                   backgroundColor = styleInterval(c(-percent_time,percent_time), c('#66FF66', 'white','#FA5353')),
                   fontWeight = styleInterval(c(-percent_time,percent_time),c('bold','normal','bold')))
-
-
-  })
+    })
 
 
   #Other goods dataset
   output$table_other<-DT::renderDataTable({
-    #observe({
     #https://stackoverflow.com/questions/50912519/select-the-number-of-rows-to-display-in-a-datatable-based-on-a-slider-input
     time<-input$months
     percent_time<- input$percent/100
-
-
+    
     # time<-11
     national_data_test<-nat_data()
     national_data_test<-AdminNatTable
@@ -1043,59 +1357,30 @@ server<-function(input, output,session) {
     month_list<-month_all[1:match(time_pull,month_all)]
 
     #now have the month_list which we can cut from in the future
-    national_data_pull<-dplyr::filter(national_data, date2%in%month_list)%>%
+    national_data_pull <- dplyr::filter(national_data, date2 %in% month_list)%>%
       dplyr::select(-c(date,num_obs,exchange_rates))
-
-    # national_data_pull<-national_data_pull%>%
-    #   reshape2::melt("date2")
-    # national_data_pull<-national_data_pull%>%
-    #   mutate(value=round(as.numeric(value)))%>%
-    #   group_by(variable)%>%
-    #   mutate(change=scales::percent(value/lag(value, order_by = date2)-1, accuracy=1),
-    #          change2=scales::percent(value/lag(value, n = 2, order_by = date2)-1, accuracy=1))%>%
-    #   mutate(change  = ifelse(!grepl('^\\-', change) & change != "0%" & !is.na(change), paste0("+", change, HTML(" &#9650;")), change),
-    #          change  = ifelse(grepl('^\\-', change), paste0(change, HTML(" &#9660;")), change),
-    #          change  = ifelse(change == "0%", paste0(change, HTML(" &#9654;")), change),
-    #          change2 = ifelse(!grepl('^\\-', change2) & change2 != "0%" & !is.na(change2), paste0("+", change2, HTML(" &#9650;")), change2),
-    #          change2 = ifelse(grepl('^\\-', change2), paste0(change2, HTML(" &#9660;")), change2),
-    #          change2 = ifelse(change2 == "0%", paste0(change2, HTML(" &#9654;")), change2))
-
-    national_data_pull<-national_data_pull%>%
+    
+    national_data_pull <- national_data_pull %>%
       reshape2::melt("date2")%>%
       reshape2::dcast(variable ~ date2)%>%
       round_df(.,0) %>% dplyr::select(variable, as.character(month_list))
 
-    col_data_pull<-ncol(national_data_pull)
-
+    col_data_pull <- ncol(national_data_pull)
     name_perc_change<-paste0(colnames(national_data_pull[col_data_pull]),
                              " percent change from standard SMEB")
     #Add SMEB base costs
     #https://stackoverflow.com/questions/13502601/add-insert-a-column-between-two-columns-in-a-data-frame
     national_data_pull<-national_data_pull%>%
-      #add_column(.,  `Standard SMEB Values`= c(365,430,100,120,130,105,525,1825,12000), .after = 1)%>%
-      # add_column(.,  `Variable`= c("Petrol","Diesel","Bottled water","Treated water","Soap","Laundry powder","Sanitary napkins","Water trucking","SMEB total"), .after = 1)%>%
-      dplyr::mutate(variable=gsub("_"," ",str_to_title(variable)))%>%
-      # mutate(Variable=lapply(variable,function(x) gsub("_"," ", paste0(toupper(substring(x,1,1)), substring(x,2,nchar(as.character(x)))))))%>%
-      dplyr::rename(Variable = variable)%>%
-      dplyr::filter(Variable %in% c("Petrol","Diesel","Bottled water","Treated water"))
+      dplyr::mutate(variable = gsub("_", " ", str_to_title(variable)))%>%
+      dplyr::rename(Variable = variable) %>%
+      dplyr::filter(Variable %in% c("Petrol", "Diesel", "Bottled water", "Treated water"))
 
     #get number of columns now we will use later in the formatting of the table
-    columns_of_data_begin<-ncol(national_data_pull)+1
-
-    #get the column number of the percent change for future formatting
-    percent_col<-time+2
-    col_format_last<-time+1
-
-
-
-    #get number of columns now we will use later in the formatting of the table
-    columns_of_data_end<-ncol(national_data_pull)
-
-    #get rid of the weird naming from the mutate_at
-    names(national_data_pull) <- gsub("_", " ", names(national_data_pull))
-
-    #maybe keep for later
-    #dplyr::mutate(.,!!name_perc_change := (((.[,col_data_pull]-.[,2])/(.[,2]))))
+    columns_of_data_begin <- ncol(national_data_pull)+1
+    percent_col <- time+2                                                       # get the column number of the percent change for future formatting
+    col_format_last <- time+1
+    columns_of_data_end <- ncol(national_data_pull)                             # get number of columns now we will use later in the formatting of the table
+    names(national_data_pull) <- gsub("_", " ", names(national_data_pull))      # get rid of the weird naming from the mutate_at
 
     #Render the output DT
     #https://stackoverflow.com/questions/60659666/changing-color-for-cells-on-dt-table-in-shiny
@@ -1107,62 +1392,66 @@ server<-function(input, output,session) {
   })
 
   #### Data Explorer ######################################################################
+  
+  # For District level data
+  table_datasetInput1 <- reactive({
+    data %>% dplyr::filter(
+      is.null(input$table_district) | District %in% input$table_district,
+      date2 >= input$table_date_select[1] & date2 <= input$table_date_select[2]
+    ) %>%
+      dplyr::select("date2", "Governorate", "District", input$table_show_vars)
+  })
+  # For KII data
+  table_datasetInput2 <- reactive({
+    full_data %>% dplyr::filter(
+      is.null(input$table_district) | District %in% input$table_district,
+      Date >= input$table_date_select[1] & Date <= input$table_date_select[2]
+      ) %>%
+      dplyr::select(Date, Governorate, District, input$table_show_vars_ki)
+    })
 
-  # table_datasetInput1 <- reactive({
-  #   data %>% filter(
-  #     is.null(input$table_district) | District %in% input$table_district,
-  #     date2 >= input$table_date_select[1] & date2 <= input$table_date_select[2]
-  #   ) %>%
-  #     dplyr::select("date2", "Governorate", "District", input$table_show_vars)
-  # })
-  # # For KII data
-  # table_datasetInput2 <- reactive({
-  #   full_data %>% filter(
-  #     is.null(input$table_district) | District %in% input$table_district,
-  #     Date >= input$table_date_select[1] & Date <= input$table_date_select[2]
-  #     ) %>%
-  #     dplyr::select(Date, Governorate, District, input$table_show_vars_ki)
-  #   })
-  # 
-  # table_datasetInput <- reactive({
-  #   if (input$table_aggregation == "District") {table_datasetInput1()} else {table_datasetInput2()}
-  #   })
-  # 
-  # output$table <- renderDT({
-  # 
-  #   DT::datatable(
-  #     table_datasetInput1(),
-  #     extensions = c('ColReorder'),
-  #     options = list(autoWidth = FALSE, dom = 't', paging = FALSE, colReorder= TRUE, fixedHeader = TRUE, scrollX = TRUE, fixedColumns = list(leftColumns = 3)),
-  #     rownames = FALSE,
-  #     style = 'bootstrap', class = 'table-condensed table-hover table-striped'
-  #   ) %>%
-  #     formatRound(
-  #       4:ncol(table_datasetInput1()),
-  #       digits = 0,
-  #       interval = 3,
-  #       mark = ",",
-  #       dec.mark = getOption("OutDec")
-  #     ) %>%
-  #     formatStyle(names(table_datasetInput1()), "white-space"="nowrap")
-  # })
-  # 
-  # output$downloadData <- downloadHandler(
-  #   filename = function() {
-  #     paste("YE-JMMI-data-download-", Sys.Date(),".csv", sep = "")
-  #   },
-  #   content = function(file) {
-  #     write.csv(table_datasetInput(), file, row.names = FALSE, na = "")
-  #   }
-  # )
-  # 
-  # observe({
-  #   input$table_reset
-  #   updatePickerInput(session, "table_district", selected = plot_location_list$District)
-  #   updatePickerInput(session, "table_show_vars", selected = c("date2", "Governorate", "District", "Food_SMEB", "WASH_SMEB"))
-  #   updatePickerInput(session, "table_show_vars_ki", selected = names(full_data),)
-  #   updateSliderTextInput(session, "table_date_select", selected = c(dates_min, dates_max))
-  # })
+  table_datasetInput <- reactive({
+    if (input$table_aggregation == "District") {table_datasetInput1()
+      # } else {
+      # table_datasetInput2()
+        }
+    })
+
+  output$table <- renderDT({
+
+    DT::datatable(
+      table_datasetInput1(),
+      extensions = c('ColReorder'),
+      options = list(autoWidth = FALSE, dom = 't', paging = FALSE, colReorder= TRUE, fixedHeader = TRUE, scrollX = TRUE, fixedColumns = list(leftColumns = 3)),
+      rownames = FALSE,
+      style = 'bootstrap', class = 'table-condensed table-hover table-striped'
+    ) %>%
+      formatRound(
+        4:ncol(table_datasetInput1()),
+        digits = 0,
+        interval = 3,
+        mark = ",",
+        dec.mark = getOption("OutDec")
+      ) %>%
+      formatStyle(names(table_datasetInput1()), "white-space"="nowrap")
+  })
+
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("YE-JMMI-data-download-", Sys.Date(),".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(table_datasetInput(), file, row.names = FALSE, na = "")
+    }
+  )
+
+  observe({
+    input$table_reset
+    updatePickerInput(session, "table_district", selected = plot_location_list$District)
+    updatePickerInput(session, "table_show_vars", selected = c("date2", "Governorate", "District", "Food_SMEB", "WASH_SMEB"))
+    updatePickerInput(session, "table_show_vars_ki", selected = names(full_data),)
+    updateSliderTextInput(session, "table_date_select", selected = c(dates_min, dates_max))
+  })
 
   #### Plot ######################################################################
 
@@ -1179,24 +1468,24 @@ server<-function(input, output,session) {
   })
 
   plot_datasetInput <- reactive({prices_long %>%
-      filter(
+      dplyr::filter(
         is.null(plot_item_select()) | Item %in% plot_item_select()
       ) %>%
       execute_if(input$plot_type == 'Line Graph' | input$plot_aggregation != 'Country',
-                 filter(
+                 dplyr::filter(
                    Date >= input$select_date[1] & Date <= input$select_date[2]
                  )
       ) %>%
       execute_if(input$plot_type == 'Boxplot' & input$plot_aggregation == 'Country',
-                 filter(
+                 dplyr::filter(
                    Date == input$select_date_boxplot
                  )
       ) %>%
-      execute_if(input$plot_aggregation == 'District',    filter(is.null(plot_district_select()) | District %in% plot_district_select())) %>%
+      execute_if(input$plot_aggregation == 'District',    dplyr::filter(is.null(plot_district_select()) | District %in% plot_district_select())) %>%
       execute_if(input$plot_aggregation == 'Governorate', dplyr::select(-District)) %>%
       execute_if(input$plot_aggregation == 'Governorate', group_by(Date, Governorate, Item)) %>%
       execute_if(input$plot_aggregation == 'Governorate', summarise_all(median, na.rm = TRUE)) %>%
-      execute_if(input$plot_aggregation == 'Governorate', filter(is.null(plot_governorate_select()) | Governorate %in% plot_governorate_select())) %>%
+      execute_if(input$plot_aggregation == 'Governorate', dplyr::filter(is.null(plot_governorate_select()) | Governorate %in% plot_governorate_select())) %>%
       execute_if(input$plot_aggregation == 'Country'      & input$plot_type == 'Line Graph', dplyr::select(-Governorate, -District)) %>%
       execute_if(input$plot_aggregation == 'Country'      & input$plot_type == 'Line Graph', group_by(Date, Item)) %>%
       execute_if(input$plot_aggregation == 'Country'      & input$plot_type == 'Line Graph', summarise_all(median, na.rm = TRUE)) %>%
@@ -1205,7 +1494,7 @@ server<-function(input, output,session) {
       execute_if(input$plot_aggregation == 'Country'      & input$plot_type == 'Line Graph' & input$select_index == 'TRUE', group_by(Item)) %>%
       execute_if((input$plot_aggregation == 'Country' & input$plot_type == 'Line Graph' | input$plot_aggregation != 'Country') & input$select_index == 'TRUE',
                  dplyr::mutate(Price = round(((Price / c(Price[Date == input$select_date_index], NA)[1])-1)*100, digits = 1))) %>%
-      filter(!is.na(Price))
+      dplyr::filter(!is.na(Price))
   })
 
   output$plot_text <- renderText({
@@ -1289,8 +1578,6 @@ server<-function(input, output,session) {
                  hc_yAxis(min = 0, title = list(text = "Price (in YER)"))
       )
   })
-
-
 
 }
 

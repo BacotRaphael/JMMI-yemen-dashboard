@@ -2,74 +2,64 @@
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Install/Load libraries
-library(utils)
-if (!require("pacman")) install.packages("pacman")
+# library(utils)
+# if (!require("pacman")) install.packages("pacman")
 # pacman::p_load(devtools, usethis, shiny, shinyjs, rgdal, dplyr, leaflet, highcharter, zoo, ggplot2, rgeos, classInt, geosphere,
 #                shinythemes, sf, purrr, shinydashboard, readxl, DT, formattable, tibble, curl, sp, stringr, shinyWidgets,
 #                leaflet.extras, kableExtra, tidytidbits, data.table, openxlsx, sass)
-packages <- c("devtools", "usethis", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "classInt", "geosphere", "shinythemes", "sf", "purrr", "shinydashboard",
-              "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets", "leaflet.extras", "kableExtra", "tidytidbits", "data.table", "openxlsx",
-                  "sass", "Matrix", "robustbase", "rgl", "minpack.lm", "googlesheets", "tidyselect", "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices","datasets", "methods")
-packages1 <- c("devtools", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "geosphere",
-              "shinythemes", "sf", "purrr", "shinydashboard", "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets",
-              "leaflet.extras", "kableExtra", "tidytidbits", "data.table", "openxlsx", "tidyr", "sass")
+# packages <- c("devtools", "usethis", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "classInt", "geosphere", "shinythemes", "sf", "purrr", "shinydashboard",
+#               "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets", "leaflet.extras", "kableExtra", "tidytidbits", "data.table", "openxlsx",
+#                   "sass", "Matrix", "robustbase", "rgl", "minpack.lm", "googlesheets", "tidyselect", "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices","datasets", "methods")
+# packages1 <- c("devtools", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "geosphere",
+#               "shinythemes", "sf", "purrr", "shinydashboard", "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets",
+#               "leaflet.extras", "tidytidbits", "data.table", "openxlsx", "tidyr", "sass")
 
-pacman::p_load(char = packages1)
+# pacman::p_load(char = packages1)
 # p_load_gh("mabafaba/reachR")
 # other.packages <- c("googlesheets", "reachR", "qpcR", "Matrix", "robustbase", "rgl", "minpack.lm", "MASS", "tidyselect",
 #                     "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices", "utils", "datasets", "methods")
 
-# #install packages
-# library(devtools)
-# library(usethis)
-# library(shiny)
-# library(shinyjs)
-# library(rgdal)
-# library(dplyr)
-# library(leaflet)
-# library(highcharter)
-# library(zoo)
-# library(ggplot2)
-# library(rgeos)
-# library(classInt)
-# library(geosphere)
-# library(shinythemes)
-# library(sf)
-# library(purrr)
-# library(shinydashboard)
-# library(readxl)
-# library(DT)
-# library(formattable)
-# library(tibble)
-# library(curl)
-# library(sp)
-# library(stringr)
-# library(shinyWidgets)
-# library(leaflet.extras)
-# library(kableExtra)
-# library(tidytidbits)
-# library(data.table)
-# library(openxlsx)
-# # remove.packages("sass")
-# # install.packages("sass")
+#install packages
+library(devtools)
+library(usethis)
+library(shiny)
+library(shinyjs)
+library(rgdal)
+library(dplyr)
+library(leaflet)
+library(highcharter)
+library(zoo)
+library(ggplot2)
+library(rgeos)
+library(classInt)
+library(geosphere)
+library(shinythemes)
+library(sf)
+library(purrr)
+library(shinydashboard)
+library(readxl)
+library(DT)
+library(formattable)
+library(tibble)
+library(curl)
+library(sp)
+library(stringr)
+library(shinyWidgets)
+library(leaflet.extras)
+library(kableExtra)
+library(tidytidbits)
+library(data.table)
+library(openxlsx)
+# remove.packages("sass")
+# install.packages("sass")
 # library("sass")
-# # packageVersion("sass") 
+# packageVersion("sass")
 
 smeb <- data.frame(SMEB = c(rep("SMEB Wash", 4), rep("SMEB Wash", 5)),                                  # define SMEB content table
                    Category = c(rep("Non-Food Items", 3), "Water", rep("Food Items", 5)),
                    Item = c("Soap", "Laundry powder", "Sanitary Napkins", "Cubic meter water",
                             "Wheat flour", "Beans dry","Vegetable oil", "Sugar", "Salt"),
                    Quantity = c("10.5 ", "20 Kg", "2 Boxes", "3.15 m^3", "7.5 Kg", "10 ", "8 ", "2.5 ", "1Kg"))
-
-# smeb_kbl <- smeb %>%                                                                                      # make a html (kable) object out of dataframe
-#   filter(SMEB=="SMEB Wash") %>% select(-SMEB) %>%
-#   kbl(escape = F) %>%
-#   kable_styling(bootstrap_options = c("hover", "condensed", "striped"), fixed_thead = T, full_width = F) %>%
-#   column_spec(1, width = "8em", bold = T, background = "white") %>%
-#   column_spec(2, width = "10em") %>%
-#   column_spec(3, width = "8em") %>%
-#   collapse_rows(columns = 1, valign = "top") %>%
-#   row_spec(0:17, extra_css = "font-size: 11px;")
 
 cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",        # define color palette for plot lines
                "rgb(86,179,205)",  "rgb(246,158,97)",  "rgb(255,246,122)",
@@ -238,7 +228,7 @@ Admin1table$date2 <- as.Date(as.yearmon(Admin1table$date))
 
 Admin1data_current <- Admin1table %>% #subset only recent month dates to attach to shapefile
   arrange(desc(date2)) %>%
-  filter(date2 == max_date)
+  dplyr::filter(date2 == max_date)
 currentD <- as.character(format(max(Admin1table$date2),"%B %Y")) #define current date for disply in dashboard
 Admin1table[4:14] <- sapply(Admin1table[4:14], as.numeric)
 
@@ -248,7 +238,7 @@ Admin2table$date2 <- as.Date(as.yearmon(Admin2table$date))
 
 Admin2data_current <- Admin2table %>% #subset only recent month dates to attach to shapefile
   arrange(desc(date2))%>%
-  filter(date2 == max_date)
+  dplyr::filter(date2 == max_date)
 currentD <- as.character(format(max(Admin2table$date2),"%B %Y")) #define current date for disply in dashboard
 Admin2table[7:16] <- sapply(Admin2table[7:16], as.numeric)
 
@@ -258,7 +248,7 @@ AdminNatTable$date2 <- as.Date(as.yearmon(AdminNatTable$date))
 
 AdminNatData_current <- AdminNatTable %>% #subset only recent month dates to attach to shapefile
   arrange(desc(date2)) %>%
-  filter(date2 == max_date)
+  dplyr::filter(date2 == max_date)
 currentD <- as.character(format(max(AdminNatTable$date2),"%B %Y"))
   #define current date for display in dashboard
 
@@ -345,7 +335,7 @@ plot_location_list <- Admin2table %>%                                           
   dplyr::rename(Governorate=government_name, District=district_name) %>%
   dplyr::select(Governorate, District) %>%
   arrange(Governorate, District) %>%
-  filter(!duplicated(District))
+  dplyr::filter(!duplicated(District))
 
 #DROP DOWN MENU SELECTIONS 
 ## Drop-down for Plot & Data Explorer + map parameters
