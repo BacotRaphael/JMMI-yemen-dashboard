@@ -157,7 +157,7 @@ full_data <- read.csv("data/data_all.csv") %>%
   dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra"), -ends_with("mrk_supply_issues"), -ends_with("other"), -ends_with("not_answer")) %>%
   setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
            new=c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates")) %>%
-  # dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+  # dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0), # Commented as we don't want to compute SMEB at KII level [would enable coming up with different figures depending on coverage]
   # Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour") %>%
   dplyr::mutate(Date=as.Date(as.yearmon(Date))) 
   
@@ -165,12 +165,12 @@ full_data <- read.csv("data/data_all.csv") %>%
 indicators <- read.csv("data/data_market_functionnality.csv") %>%
   dplyr::select(-matches("X|country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra"), -ends_with("mrk_supply_issues"), -ends_with("other"), -ends_with("not_answer")) %>%
   dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
-  gather(Indicator, Value, 4:(ncol(.))) %>%
+  tidyr::gather(Indicator, Value, 4:(ncol(.))) %>%
   dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
   dplyr::group_by(date, governorate, district, Indicator) %>%
   dplyr::summarise(freq = sum(Value == 1 | Value == "yes" | Value == "Yes", na.rm = TRUE) / sum(!is.na(Value)) * 100) %>%
   mutate_if(is.numeric, round, 0) %>% mutate(freq=ifelse(is.nan(freq), NA, freq)) %>%
-  spread(Indicator, freq) %>%
+  tidyr::spread(Indicator, freq) %>%
   dplyr::rename(Date = date, Governorate = governorate, District = district) %>% ungroup
 
 indicators_long <- indicators %>%
@@ -381,8 +381,12 @@ indicator_group <- c(rep("I. Indices", 3),
                      rep("VI. Other indicators", n_mkt_fun))
 
 # Indicator_list => will determine drop down list + legend + palettes for maps
+Item <- names(c(vars, vars_functionnality))
+Item2 <- stringr::str_wrap(Item, width = 45)  # To wrap the choices that are too large in the drop down menu
+Item2 <- stringr::str_replace_all(Item2, "\\n", "<br>")
 
-indicator_list <- data.frame(Item=names(c(vars, vars_functionnality)),
+indicator_list <- data.frame(Item=Item,
+                             Item2=Item2,
                              Variable=unname(c(vars, vars_functionnality)),
                              Group = indicator_group,
                              Legend = title.legend,
@@ -447,7 +451,7 @@ ui <- function(){
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 60, left = "auto", right = 20, bottom = 1,
                                         # width = 500,
-                                        width = "40%",
+                                        width = "35%",
                                         height = "auto",
 
                                         hr(),
@@ -477,8 +481,9 @@ ui <- function(){
                                                     choices = lapply(split(indicator_list$Item, indicator_list$Group), as.list),
                                                     options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
                                                     selected = "SMEB",
-                                                    multiple = FALSE
-                                        ),
+                                                    multiple = FALSE,
+                                                    choicesOpt = list(content = indicator_list$Item2)
+                                                    ),
 
                                         h5(textOutput("text3")), #extra small text which had to be customized as an html output in server.r (same with text1 and text 2)
 
@@ -615,7 +620,7 @@ ui <- function(){
                                                        label = "Item(s):",
                                                        choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list)[1:6],
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
-                                                       selected = c("Food_SMEB", "WASH_SMEB"),
+                                                       selected = c("SMEB", "Food_SMEB", "WASH_SMEB"),
                                                        multiple = TRUE
                                            )
                           ),
