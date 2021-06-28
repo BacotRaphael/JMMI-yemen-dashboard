@@ -413,7 +413,7 @@ ui <- function(){
   varsDate<- c("Months to Select" = "varDateSelect")
 
   #USER INTERFACE COMPONENTS
-  navbarPage(theme= shinytheme("journal"),
+  navbarPage(theme= shinytheme("journal"), collapsible = T,
              title=strong(HTML("<span style='font-size:30px'>YEMEN: JOINT MARKET MONITORING INITIATIVE</span>")), # id="nav", #MAIN TITLE
              windowTitle = "REACH: Yemen Joint Market Monitoring Initiative (JMMI)", #Title for browser tab window
 
