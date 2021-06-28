@@ -120,143 +120,101 @@ data_all <- data_all_JMMI %>% dplyr::select(all_of(metacol), all_of(col_price), 
 # Only keeps prices [for aggregation below]
 data_all_JMMI <- data_all_JMMI %>% dplyr::select(all_of(metacol), all_of(col_price))
 
-# Aggregation loop - will aggregate by median and calculate # of observations for all prices by district and governorate 
+# Aggregation loops - will aggregate by median and calculate # of observations for all prices by district and governorate 
+
+# Loop 1 - Compute medians at district/gov level using all available observations, except national data which subsets districts with consistent coverage
+# District, Governorate and national level medians are computed using base data. [No median of median methodology]
 
 for(i in seq_along(date_list)){
   if (i ==1){
-    df1<-data_all_JMMI%>%
-      filter(jmmi_date==date_list[i])
+    df1 <- data_all_JMMI %>% filter(jmmi_date==date_list[i])
     
-    district_all<-df1%>%
-      aggregate_median("district_id")
-    
-    district_obs<-df1%>%
-      dplyr::select("district_id","jmmi","jmmi_date")%>%
+    district_all <- df1 %>% aggregate_median("district_id")
+    district_obs <- df1 %>% dplyr::select("district_id","jmmi","jmmi_date") %>%
       dplyr::count(district_id, jmmi)
     
-    governorate_all<-df1%>%
-      aggregate_median("governorate_id")
-    
-    governorate_obs<-df1%>%
-      dplyr::select("governorate_id","jmmi","jmmi_date")%>%
+    governorate_all <- df1 %>% dplyr::select(-any_of(c("aor"))) %>%               # unselect aor which will be aggregated with mode, leading to misleading data.
+      aggregate_median("governorate_id") 
+    governorate_obs <- df1 %>% dplyr::select("governorate_id","jmmi","jmmi_date")%>%
       dplyr::count(governorate_id, jmmi)
     
-    national_all<-df1%>%
-      aggregate_median("country_id")
-    
-    national_obs<-df1%>%
-      dplyr::select("country_id","jmmi","jmmi_date")%>%
+    national_all <- df1 %>% dplyr::select(-any_of(c("aor"))) %>%                  # unselect aor which will be aggregated with mode, leading to misleading data.
+      aggregate_median("country_id") 
+    national_obs <- df1 %>% dplyr::select("country_id","jmmi","jmmi_date")%>%
       dplyr::count(country_id, jmmi)
     
   }else{
     
-    df1<-data_all_JMMI%>%
-      filter(jmmi_date==date_list[i])
+    df1 <- data_all_JMMI %>% filter(jmmi_date==date_list[i])
+    df0 <- data_all_JMMI %>% filter(jmmi_date==date_list[i-1])
     
-    df0<-data_all_JMMI%>%
-      filter(jmmi_date==date_list[i-1])
+    district_all <- df1 %>% 
+      aggregate_median("district_id") %>% bind_rows(district_all)
+    district_obs <- df1 %>% dplyr::select("district_id","jmmi","jmmi_date") %>%
+      dplyr::count(district_id,jmmi) %>% bind_rows(district_obs)
     
-    district_all<-df1%>%
-      aggregate_median("district_id")%>%
-      bind_rows(district_all)
+    governorate_all <- df1 %>% dplyr::select(-any_of(c("aor"))) %>%             # unselect aor which will be aggregated with mode, leading to misleading data.
+      aggregate_median("governorate_id") %>% bind_rows(governorate_all)
+    governorate_obs <- df1 %>% dplyr::select("governorate_id","jmmi","jmmi_date")%>%
+      dplyr::count(governorate_id,jmmi) %>% bind_rows(governorate_obs)
     
-    district_obs<-df1%>%
-      dplyr::select("district_id","jmmi","jmmi_date")%>%
-      dplyr::count(district_id,jmmi)%>%
-      bind_rows(district_obs)
+    df0_pull <- unique(df0$district_id)
+    df_dist <- subset(df1, district_id %in% df0_pull)
     
-    governorate_all<-df1%>%
-      aggregate_median("governorate_id")%>%
-      bind_rows(governorate_all)
-    
-    governorate_obs<-df1%>%
-      dplyr::select("governorate_id","jmmi","jmmi_date")%>%
-      dplyr::count(governorate_id,jmmi)%>%
-      bind_rows(governorate_obs)
-    
-    df0_pull<-unique(df0$district_id)
-    df_dist<-subset(df1, district_id %in% df0_pull)
-    
-    national_all<-df_dist%>%
-      aggregate_median("country_id")%>%
-      bind_rows(national_all)
-    
-    national_obs<-df_dist%>%
-      dplyr::select("country_id","jmmi","jmmi_date")%>%
-      dplyr::count(country_id, jmmi)%>%
-      bind_rows(national_obs)
+    national_all <- df_dist %>% dplyr::select(-any_of(c("aor"))) %>%            # unselect aor which will be aggregated with mode, leading to misleading data.
+      aggregate_median("country_id") %>% bind_rows(national_all)
+    national_obs <- df_dist %>% dplyr::select("country_id","jmmi","jmmi_date")%>%
+      dplyr::count(country_id, jmmi) %>% bind_rows(national_obs)
     
     print(date_list[i])
   }
 }
 
-# Compute medians and coverage only for 
+# Loop 2 - Compute medians at district/gov/national data using districts with consistent coverage
+# Here district medians are computed with base data, while national and governorate medians are computed from the district medians
 
 for(i in seq_along(date_list)){
   if (i ==1){
-    df1<-data_all_JMMI%>%
-      filter(jmmi_date==date_list[i])
+    df1 <- data_all_JMMI %>% filter(jmmi_date==date_list[i])
     
-    district_all_pct_change<-df1%>%
+    district_all_pct_change <- df1 %>%
       aggregate_median("district_id")
-    
-    district_obs_pct_change<-df1%>%
-      dplyr::select("district_id","jmmi","jmmi_date")%>%
+    district_obs_pct_change <- df1 %>% dplyr::select("district_id","jmmi","jmmi_date") %>%
       dplyr::count(district_id, jmmi)
   
-    governorate_all_pct_change<-district_all%>%
+    governorate_all_pct_change <- district_all_pct_change %>% dplyr::select(-any_of(c("aor"))) %>%  # unselect aor which will be aggregated with mode, leading to misleading data.
       aggregate_median("governorate_id")
-  
-    governorate_obs_pct_change<-df1%>%
-      dplyr::select("governorate_id","jmmi","jmmi_date")%>%
+    governorate_obs_pct_change <- df1 %>% dplyr::select("governorate_id","jmmi","jmmi_date") %>%
       dplyr::count(governorate_id, jmmi)
     
-    national_all_pct_change<-governorate_all%>%
+    national_all_pct_change <- district_all_pct_change %>%                      # here takes median of medians [if dispersion across district medians + low number of covered districts, estimates will be very coverage dependent]
       aggregate_median("country_id")
-    
-    national_obs_pct_change<-df1%>%
-      dplyr::select("country_id","jmmi","jmmi_date")%>%
+    national_obs_pct_change <- df1 %>% dplyr::select("country_id","jmmi","jmmi_date")%>%
       dplyr::count(country_id, jmmi)
     
-      
   }else{
-    df1<-data_all_JMMI%>%
-      filter(jmmi_date==date_list[i])
-    
-    df0<-data_all_JMMI%>%
-      filter(jmmi_date==date_list[i-1])
+    df1 <- data_all_JMMI %>% filter(jmmi_date==date_list[i])
+    df0 <- data_all_JMMI %>% filter(jmmi_date==date_list[i-1])
     
     df0_pull<-unique(df0$district_id)
     df_dist<-subset(df1, district_id %in% df0_pull)                             # subsets only districts that were covered previous month 
     
-    district_all_alone_pct_change<-df_dist%>%
+    district_all_alone_pct_change <- df_dist %>%
       aggregate_median("district_id")
+    district_all_pct_change <- bind_rows(district_all_alone_pct_change,district_all_pct_change) # Add the medians of this months to all past months, based on consistent coverage
+    district_obs_pct_change <- df1 %>% dplyr::select("district_id","jmmi","jmmi_date") %>%
+      dplyr::count(district_id,jmmi) %>% bind_rows(district_obs_pct_change)
     
-    district_all_pct_change<-bind_rows(district_all_alone_pct_change,district_all_pct_change) # Add the medians of this months to all past months, based on consistent coverage
-    
-    district_obs_pct_change<-df1%>%
-      dplyr::select("district_id","jmmi","jmmi_date")%>%
-      dplyr::count(district_id,jmmi)%>%
-      bind_rows(district_obs_pct_change)
-    
-    governorate_all_alone_pct_change<-district_all_alone_pct_change%>%
+    governorate_all_alone_pct_change <- district_all_alone_pct_change %>% dplyr::select(-any_of(c("aor"))) %>% # unselect aor which will be aggregated with mode, leading to misleading data.
       aggregate_median("governorate_id")
+    governorate_all_pct_change <- bind_rows(governorate_all_alone_pct_change,governorate_all_pct_change)
+    governorate_obs_pct_change <- df1 %>% dplyr::select("governorate_id","jmmi","jmmi_date") %>%
+      dplyr::count(governorate_id,jmmi) %>% bind_rows(governorate_obs_pct_change)
     
-    governorate_all_pct_change<-bind_rows(governorate_all_alone_pct_change,governorate_all_pct_change)
-    
-    governorate_obs_pct_change<-df1%>%
-      dplyr::select("governorate_id","jmmi","jmmi_date")%>%
-      dplyr::count(governorate_id,jmmi)%>%
-      bind_rows(governorate_obs_pct_change)
-    
-    national_all_pct_change<-governorate_all_alone_pct_change%>%
-      aggregate_median("country_id")%>%
-      bind_rows(national_all_pct_change)
-    
-    national_obs_pct_change<-df1%>%
-      dplyr::select("country_id","jmmi","jmmi_date")%>%
-      dplyr::count(country_id, jmmi)%>%
-      bind_rows(national_obs_pct_change)
+    national_all_pct_change <- district_all_alone_pct_change %>%
+      aggregate_median("country_id") %>% bind_rows(national_all_pct_change)
+    national_obs_pct_change <- df1 %>% dplyr::select("country_id","jmmi","jmmi_date") %>%
+      dplyr::count(country_id, jmmi) %>% bind_rows(national_obs_pct_change)
     
     print(date_list[i])
   }
@@ -268,9 +226,9 @@ district_final<-dplyr::full_join(district_all,district_obs, by = c("district_id"
 governorate_final<-dplyr::full_join(governorate_all,governorate_obs, by = c("governorate_id", "jmmi"))
 national_final<-dplyr::full_join(national_all,national_obs, by = c("country_id", "jmmi"))
 
-district_final_pct_change<-dplyr::full_join(district_all_pct_change,district_obs_pct_change, by = c("district_id", "jmmi"))
-governorate_final_pct_change<-dplyr::full_join(governorate_all_alone_pct_change,governorate_obs_pct_change, by = c("governorate_id", "jmmi"))
-national_final_pct_change<-dplyr::full_join(national_all_pct_change,national_obs_pct_change, by = c("country_id", "jmmi"))
+district_final_pct_change <- dplyr::full_join(district_all_pct_change,district_obs_pct_change, by = c("district_id", "jmmi"))
+governorate_final_pct_change <- dplyr::full_join(governorate_all_alone_pct_change,governorate_obs_pct_change, by = c("governorate_id", "jmmi"))
+national_final_pct_change <- dplyr::full_join(national_all_pct_change,national_obs_pct_change, by = c("country_id", "jmmi"))
 
 #reorder the variables to fit with the google sheets templates
 #http://www.sthda.com/english/wiki/reordering-data-frame-columns-in-r
@@ -279,11 +237,11 @@ national_final_pct_change<-dplyr::full_join(national_all_pct_change,national_obs
 district_final<-district_final[,c("jmmi_date","aor","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
 colnames(district_final)<-c("date","aor","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-governorate_final<-governorate_final[,c("jmmi_date","aor","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(governorate_final)<-c("date","aor","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+governorate_final<-governorate_final[,c("jmmi_date","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(governorate_final)<-c("date","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-national_final<-national_final[,c("jmmi_date","aor","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(national_final)<-c("date","aor","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+national_final<-national_final[,c("jmmi_date","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(national_final)<-c("date","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
 final_list<-list("District"=district_final,"Governorate" = governorate_final, "National" = national_final)
 
@@ -299,11 +257,11 @@ write.xlsx(final_list, file = "./data/updated_interactive.xlsx")
 district_final_pct_change<-district_final_pct_change[,c("jmmi_date","aor","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
 colnames(district_final_pct_change)<-c("date","aor","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-governorate_final_pct_change<-governorate_final_pct_change[,c("jmmi_date","aor","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(governorate_final_pct_change)<-c("date","aor","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+governorate_final_pct_change<-governorate_final_pct_change[,c("jmmi_date","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(governorate_final_pct_change)<-c("date","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-national_final_pct_change<-national_final_pct_change[,c("jmmi_date","aor","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(national_final_pct_change)<-c("date","aor","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+national_final_pct_change<-national_final_pct_change[,c("jmmi_date","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(national_final_pct_change)<-c("date","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
 final_list_pct_change<-list("District"=district_final_pct_change,"Governorate" = governorate_final_pct_change, "National" = national_final_pct_change)
 
@@ -312,7 +270,7 @@ setwd(this_script_path)
 
 write.xlsx(final_list_pct_change, file = "./data/updated_interactive_pct_change.xlsx")
 
-#undo after all clear
+# undo after all clear
 write.csv(district_final, file = "./data/district_interactive.csv")
 write.csv(governorate_final, file = "./data/governorate_interactive.csv")
 write.csv(national_final, file = "./data/national_interactive.csv")

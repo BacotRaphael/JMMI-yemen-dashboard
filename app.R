@@ -160,39 +160,47 @@ Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr
 ## SMEB Calculation - update the SMEB in this function only!
 calculate.smeb <- function(df){
   df <- df %>%
-    mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-           Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0),
+    mutate(WASH_SMEB = (soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15) %>% as.numeric %>% round(.,0),
+           Food_SMEB = (wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt) %>% as.numeric %>% round(.,0),
            NFI_Shelter_lumpsum = ifelse(aor == "North", 25000, ifelse(aor == "South", 28750, mean(c(25000,28750)))) %>% round(.,0),
            Services_lumpsum = ifelse(aor == "North", 19000, ifelse(aor == "South", 21850, mean(c(19000,21850)))) %>% round(.,0),
            SMEB = ifelse(!is.na(WASH_SMEB) & !is.na(Food_SMEB), WASH_SMEB + Food_SMEB + NFI_Shelter_lumpsum + Services_lumpsum %>% round(.,0), NA))
   return(df)
 }
 
-## Calculate SMEB for all datasets
-list_admin <- list(AdminNatData, Admin1data, Admin2data)
-names(list_admin) <- c("AdminNatData", "Admin1data", "Admin2data")
-for (df_name in names(list_admin)){
-  assign(df_name, list_admin[[df_name]] %>% calculate.smeb)
-}
+## Calculate SMEB at district level
+Admin2data <- Admin2data %>% calculate.smeb
+
+## Aggregate SMEB and join to admin1 and national level
+smeb_gov <- Admin2data %>% group_by(date, government_ID) %>% summarise_at(vars(matches("SMEB|lumpsum")), ~median(., na.rm=T))
+Admin1data <- Admin1data %>% full_join(., smeb_gov, by = c("date", "government_ID")) 
+smeb_nat <- Admin2data %>% group_by(date) %>% summarise_at(vars(matches("SMEB|lumpsum")), ~median(., na.rm=T))
+AdminNatData <- AdminNatData %>% full_join(., smeb_nat, by = c("date"))
+
+## Calculate SMEB for all datasets / discarded => would require aor defined at governorate and national level.
+# list_admin <- list(AdminNatData, Admin1data, Admin2data)
+# names(list_admin) <- c("AdminNatData", "Admin1data", "Admin2data")
+# for (df_name in names(list_admin)){assign(df_name, list_admin[[df_name]] %>% calculate.smeb)}
+
 max_date <- max(as.Date(as.yearmon(AdminNatData$date)))  
 
 #Wrangle Data into appropriate formats
 #Governorates
-Admin1table <- Admin1data %>% mutate_at(vars(-matches("date|government")), ~ round(as.numeric(.)), 0) %>%
+Admin1table <- Admin1data %>% mutate_at(vars(-matches("date|aor|government")), ~ round(as.numeric(.)), 0) %>%
   mutate(date2 = as.Date(as.yearmon(date)))
 
 Admin1data_current <- Admin1table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
 currentD <- as.character(format(max(Admin1table$date2),"%B %Y"))                                # define current date for disply in dashboard
 
 #Districts
-Admin2table <- Admin2data %>% mutate_at(vars(-matches("date|government|district")), ~ round(as.numeric(.)), 0) %>%
+Admin2table <- Admin2data %>% mutate_at(vars(-matches("date|aor|government|district")), ~ round(as.numeric(.)), 0) %>%
   mutate(date2 = as.Date(as.yearmon(date)))
 
 Admin2data_current <- Admin2table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
 currentD <- as.character(format(max(Admin2table$date2),"%B %Y"))                                # define current date for disply in dashboard
 
 #National
-AdminNatTable <- AdminNatData %>% mutate_at(vars(-matches("date")), ~ round(as.numeric(.)), 0) %>%
+AdminNatTable <- AdminNatData %>% mutate_at(vars(-matches("date|aor")), ~ round(as.numeric(.)), 0) %>%
   mutate(date2 = as.Date(as.yearmon(date)))
 
 AdminNatData_current <- AdminNatTable %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
@@ -219,7 +227,7 @@ full_data <- read.csv("data/data_all.csv") %>%
 
 # Full database for data explorer at district level + Plot tab
 indicators <- read.csv("data/data_market_functionnality.csv") %>%
-  dplyr::select(-matches("country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
+  dplyr::select(-matches("X|country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
   dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
   gather(Indicator, Value, 4:(ncol(.))) %>%
   dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
@@ -245,14 +253,15 @@ indicators <- read.csv("data/data_market_functionnality.csv") %>%
 indicators_long <- indicators %>%
   tidyr::pivot_longer(cols = 4:ncol(.)) %>%
   dplyr::rename(Item=name, Price=value)
-prices_long <- prices_long %>% rbind(indicators_long)                           ## For the plot tab
 
 # Price long data for Plot tab
 prices_long <- Admin2table %>%
-  dplyr::select(date2, government_name:district_ID, everything(), -date, -government_ID, -district_ID) %>%
+  dplyr::select(date2, government_name:district_ID, everything(), -date, -government_ID, -district_ID, -aor) %>%
   dplyr::rename(Date=date2, Governorate=government_name, District=district_name) %>%
   tidyr::pivot_longer(cols = 4:ncol(.)) %>%
   dplyr::rename(Item=name, Price=value)
+
+prices_long <- prices_long %>% rbind(indicators_long)                           ## For the plot tab
 
 data <- Admin2table %>%                                                         ## for the data explorer tab
   dplyr::rename(Date=date, Governorate=government_name, District=district_name) %>%
@@ -326,24 +335,21 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
 # To be updated whenever adding new item
 
 vars <- c(
-  "WASH SMEB"="WASH_SMEB", "Food SMEB"="Food_SMEB",
-  "Parallel Exchange Rates"="exchange_rates", "Wheat Flour" = "wheat_flour",
-  "Rice" = "rice", "Dry Beans" = "beans_dry",
-  "Canned Beans" = "beans_can", "Lentils" = "lentil",
-  "Vegetable Oil" = "vegetable_oil", "Sugar" = "sugar",
-  "Salt" = "salt", "Potato" = "potato",
-  "Onion" = "onion", "Petrol" = "petrol",
-  "Diesel" = "diesel", "Bottled Water"="bottled_water",
-  "Treated Water"="treated_water", "Soap"="soap",
-  "Laundry Powder"="laundry_powder", "Sanitary Napkins"="sanitary_napkins",
+  "SMEB"="SMEB", "WASH SMEB"="WASH_SMEB", "Food SMEB"="Food_SMEB",
+  "Parallel Exchange Rates"="exchange_rates",
+  "Wheat Flour" = "wheat_flour", "Rice" = "rice", "Dry Beans" = "beans_dry", "Canned Beans" = "beans_can", "Lentils" = "lentil",
+  "Vegetable Oil" = "vegetable_oil", "Sugar" = "sugar", "Salt" = "salt", "Potato" = "potato", "Onion" = "onion", 
+  "Petrol" = "petrol", "Diesel" = "diesel",
+  "Bottled Water"="bottled_water", "Treated Water"="treated_water",
+  "Soap"="soap", "Laundry Powder"="laundry_powder", "Sanitary Napkins"="sanitary_napkins",
   "Water Trucking"= "cost_cubic_meter"
 )
 
-title.legend <- c("WASH SMEB Cost", "Food SMEB Cost", "YER to 1 USD", "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)", 
+title.legend <- c("SMEB Cost", "WASH SMEB Cost", "Food SMEB Cost", "YER to 1 USD", "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)", 
                   "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 L)", "Price (1 L)", "Price (0.75 L)", "Price (10 L)", 
                   "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)",
                   rep("	% of traders", 28))
-unit <- c(rep(" YER", 21),
+unit <- c(rep(" YER", 22),
           rep(" %", 28))
 
 ## Setting custom maps color palettes for all items:
@@ -353,11 +359,11 @@ pal3 <- colorRamp(c("#C9C3F8", "#5D52AD", "#FAD962", "#AA9239"), interpolate="li
 pal4 <- colorRamp(c("#FFD7D9", "#FF535B", "#FB000D", "#830007", "#480004"), interpolate="linear")
 pal5 <- colorRamp(c("#C7C0FF", "#7A6AFF", "#1501B9", "#0A005D", "#050033"), interpolate="linear")
 
-palette <- c(pal1, "Greens", "Greens", pal2, "YlOrBr", pal2, "BuPu","RdPu", pal3, "Greens", pal3,
+palette <- c(pal1, pal1, "Greens", "Greens", pal2, "YlOrBr", pal2, "BuPu","RdPu", pal3, "Greens", pal3,
              "Greens", "Greens", "YlOrBr", pal4, pal5, pal2, "RdPu", "Purples", "BuPu", pal3, 
              rep("YlOrBr", 28))                                                 # keep same palette for the market functionality indicators
 
-indicator_group <- c(rep("I. Indices", 2), 
+indicator_group <- c(rep("I. Indices", 3), 
                      "II. Currencies",
                      rep("III. Food items", 10),
                      rep("IV. Fuels", 2),
@@ -376,18 +382,18 @@ indicator_list <- data.frame(Item=names(c(vars, vars_functionnality)),
                              Legend = title.legend,
                              Unit = unit,
                              Palette = I(palette))
+# write.xlsx(indicator_list %>% dplyr::select(-Palette), "indicator_list.xlsx")
 
-plot_location_list <- Admin2table %>%                                                 # Define location list
-  ungroup %>%
+plot_location_list <- Admin2table %>% ungroup %>%                               # Define location list
   dplyr::rename(Governorate=government_name, District=district_name) %>%
   dplyr::select(Governorate, District) %>%
   arrange(Governorate, District) %>%
   dplyr::filter(!duplicated(District))
 
-dates <- sort(unique(Admin2table$date2))                                            # define list with date range in data
-dates_min  <- as.Date("2020-01-01")                                               # set minimum date to be displayed
-dates_max  <- max(Admin2table$date2, na.rm = T)                                     # maximum date in data
-dates_max2 <- sort(unique(Admin2table$date2), decreasing=T)[2]                      # second-latest date
+dates <- sort(unique(Admin2table$date2))                                        # define list with date range in data
+dates_min  <- as.Date("2020-01-01")                                             # set minimum date to be displayed
+dates_max  <- max(Admin2table$date2, na.rm = T)                                 # maximum date in data
+dates_max2 <- sort(unique(Admin2table$date2), decreasing=T)[2]                  # second-latest date
 
 
 # UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
