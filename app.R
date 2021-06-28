@@ -3,25 +3,6 @@
 # With food components
 
 #GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-# packages <- c("devtools", "usethis", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "classInt", "geosphere", "shinythemes", "sf", "purrr", "shinydashboard",
-#               "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets", "leaflet.extras", "kableExtra", "tidytidbits", "data.table", "openxlsx",
-#                   "sass", "Matrix", "robustbase", "rgl", "minpack.lm", "googlesheets", "tidyselect", "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices","datasets", "methods")
-# packages1 <- c("devtools", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "geosphere",
-#               "shinythemes", "sf", "purrr", "shinydashboard", "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets",
-#               "leaflet.extras", "tidytidbits", "data.table", "openxlsx", "tidyr", "sass")
-# pacman::p_load(char = packages1)
-
-# other.packages <- c("googlesheets", "reachR", "qpcR", "Matrix", "robustbase", "rgl", "minpack.lm", "MASS", "tidyselect",
-#                     "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices", "utils", "datasets", "methods")
-
-# Install/Load libraries
-# library(utils)
-# if (!require("pacman")) install.packages("pacman")
-# pacman::p_load(devtools, usethis, shiny, shinyjs, rgdal, dplyr, leaflet, highcharter, zoo, ggplot2, rgeos, classInt, geosphere,
-#                shinythemes, sf, purrr, shinydashboard, readxl, DT, formattable, tibble, curl, sp, stringr, shinyWidgets,
-#                leaflet.extras, kableExtra, tidytidbits, data.table, openxlsx, sass, grDevices)
-# p_load_gh("mabafaba/reachR")
 
 #install packages
 library(devtools)
@@ -171,8 +152,53 @@ round_df <- function(df, digits) {
 
 ##-------------------------- TABULAR DATA WRANGLE ----------------------
 
-# Full district database for data explorer KII dataset 
+## Uploading national, governorate and district data
+AdminNatData <- read.csv("data/national_interactive.csv") %>% as_tibble() %>% dplyr::select(-X)
+Admin1data <- read.csv("data/governorate_interactive.csv") %>% as_tibble() %>% dplyr::select(-X)                       
+Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr::select(-X)
 
+## SMEB Calculation - update the SMEB in this function only!
+calculate.smeb <- function(df){
+  df <- df %>%
+    mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+           Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0),
+           NFI_Shelter_lumpsum = ifelse(aor == "North", 25000, ifelse(aor == "South", 28750, mean(c(25000,28750)))) %>% round(.,0),
+           Services_lumpsum = ifelse(aor == "North", 19000, ifelse(aor == "South", 21850, mean(c(19000,21850)))) %>% round(.,0),
+           SMEB = ifelse(!is.na(WASH_SMEB) & !is.na(Food_SMEB), WASH_SMEB + Food_SMEB + NFI_Shelter_lumpsum + Services_lumpsum %>% round(.,0), NA))
+  return(df)
+}
+
+## Calculate SMEB for all datasets
+list_admin <- list(AdminNatData, Admin1data, Admin2data)
+names(list_admin) <- c("AdminNatData", "Admin1data", "Admin2data")
+for (df_name in names(list_admin)){
+  assign(df_name, list_admin[[df_name]] %>% calculate.smeb)
+}
+max_date <- max(as.Date(as.yearmon(AdminNatData$date)))  
+
+#Wrangle Data into appropriate formats
+#Governorates
+Admin1table <- Admin1data %>% mutate_at(vars(-matches("date|government")), ~ round(as.numeric(.)), 0) %>%
+  mutate(date2 = as.Date(as.yearmon(date)))
+
+Admin1data_current <- Admin1table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
+currentD <- as.character(format(max(Admin1table$date2),"%B %Y"))                                # define current date for disply in dashboard
+
+#Districts
+Admin2table <- Admin2data %>% mutate_at(vars(-matches("date|government|district")), ~ round(as.numeric(.)), 0) %>%
+  mutate(date2 = as.Date(as.yearmon(date)))
+
+Admin2data_current <- Admin2table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
+currentD <- as.character(format(max(Admin2table$date2),"%B %Y"))                                # define current date for disply in dashboard
+
+#National
+AdminNatTable <- AdminNatData %>% mutate_at(vars(-matches("date")), ~ round(as.numeric(.)), 0) %>%
+  mutate(date2 = as.Date(as.yearmon(date)))
+
+AdminNatData_current <- AdminNatTable %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
+currentD <- as.character(format(max(AdminNatTable$date2),"%B %Y"))                                  # define current date for display in dashboard
+
+# Full database for data explorer at KII level 
 full_data <- read.csv("data/data_all.csv") %>%
   dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra|mrk_supply_issues")) %>%
   setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
@@ -180,60 +206,46 @@ full_data <- read.csv("data/data_all.csv") %>%
   dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
                 Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour")%>%
   dplyr::mutate(Date=as.Date(as.yearmon(Date))) %>%
-  dplyr::rename("mrk_increse_food_100" = mrk_increse_food_100,
-                "mrk_increse_food_50" = mrk_increse_food_50,
-                "mrk_increse_fuel_100" = mrk_increse_fuel_100,
-                "mrk_increse_fuel_50" = mrk_increse_fuel_50,
-                "mrk_increse_wash_100" = mrk_increse_wash_100,
-                "mrk_increse_wash_50" = mrk_increse_wash_50,
-                "mrk_increse_water_100" = mrk_increse_water_100,
-                "mrk_increse_water_50" = mrk_increse_water_50,
-                "mrk_supply_routes" = mrk_supply_routes) %>%
+  dplyr::rename("If the demand for food items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_food_100,
+                "If the demand for food items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_food_50,
+                "If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_fuel_100,
+                "If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_fuel_50,
+                "If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_wash_100,
+                "If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_wash_50,
+                "If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_water_100,
+                "If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_water_50,
+                "Have supply routes changed in a way harmful to your business in the past 30 days?" = mrk_supply_routes) %>%
   rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_"))
 
-# full_data <- read.csv("data/data_all.csv")%>%
-#   dplyr::select(c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"))%>%
-#   setNames(c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates"))%>%
-#   dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)),
-#          Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)), .before="wheat_flour")%>%
-#   dplyr::mutate(Date=as.Date(as.yearmon(Date)))
+# Full database for data explorer at district level + Plot tab
+indicators <- read.csv("data/data_market_functionnality.csv") %>%
+  dplyr::select(-matches("country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
+  dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
+  gather(Indicator, Value, 4:(ncol(.))) %>%
+  dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
+  dplyr::group_by(date, governorate, district, Indicator) %>%
+  dplyr::summarise(freq = sum(Value == 1 | Value == "yes" | Value == "Yes", na.rm = TRUE) / sum(!is.na(Value)) * 100) %>%
+  mutate_if(is.numeric, round, 0) %>% 
+  spread(Indicator, freq) %>%
+  dplyr::rename(Date = date,
+                Governorate = governorate,
+                District = district,
+                "If the demand for food items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_food_100,
+                "If the demand for food items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_food_50,
+                "If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_fuel_100,
+                "If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_fuel_50,
+                "If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_wash_100,
+                "If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_wash_50,
+                "If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_water_100,
+                "If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_water_50,
+                "Have supply routes changed in a way harmful to your business in the past 30 days?" = mrk_supply_routes) %>%
+  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_")) %>%
+  setnames(gsub("_", " ", gsub("\\.", " ", colnames(.))))
 
-Admin1data <- read.csv("data/governorate_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>%
-  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB calculation
-Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr::select(-X) %>% 
-  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB caluclation
-AdminNatData <- read.csv("data/national_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>% 
-  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB caluclation)
-
-max_date <- max(as.Date(as.yearmon(AdminNatData$date)))  
-
-#Wrangle Data into appropriate formats
-#Governorates
-Admin1table<- Admin1data %>% as.data.frame %>%
-  mutate_at(vars(-matches("date|government")), ~ round(as.numeric(.)), 0) %>%
-  mutate(date2 = as.Date(as.yearmon(date)))
-
-Admin1data_current <- Admin1table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
-currentD <- as.character(format(max(Admin1table$date2),"%B %Y"))                                # define current date for disply in dashboard
-
-#Districts
-Admin2table <- Admin2data %>% as.data.frame %>% 
-  mutate_at(vars(-matches("date|government|district")), ~ round(as.numeric(.)), 0) %>%
-  mutate(date2 = as.Date(as.yearmon(date)))
-
-Admin2data_current <- Admin2table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
-currentD <- as.character(format(max(Admin2table$date2),"%B %Y"))                                # define current date for disply in dashboard
-
-#National
-AdminNatTable <- AdminNatData %>% as.data.frame %>%
-  mutate_at(vars(-matches("date")), ~ round(as.numeric(.)), 0) %>%
-  mutate(date2 = as.Date(as.yearmon(date)))
-
-AdminNatData_current <- AdminNatTable %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
-currentD <- as.character(format(max(AdminNatTable$date2),"%B %Y"))                                  # define current date for display in dashboard
+indicators_long <- indicators %>%
+  tidyr::pivot_longer(cols = 4:ncol(.)) %>%
+  dplyr::rename(Item=name, Price=value)
+prices_long <- prices_long %>% rbind(indicators_long)                           ## For the plot tab
 
 # Price long data for Plot tab
 prices_long <- Admin2table %>%
@@ -241,14 +253,6 @@ prices_long <- Admin2table %>%
   dplyr::rename(Date=date2, Governorate=government_name, District=district_name) %>%
   tidyr::pivot_longer(cols = 4:ncol(.)) %>%
   dplyr::rename(Item=name, Price=value)
-
-# Full district database for data explorer + Plot tab
-indicators <- read.xlsx("data/market functionnality indicators.xlsx", check.names = F) %>%
-  setnames(gsub("_", " ", gsub("\\.", " ", colnames(.))))
-indicators_long <- indicators %>%
-  tidyr::pivot_longer(cols = 4:ncol(.)) %>%
-  dplyr::rename(Item=name, Price=value)
-prices_long <- prices_long %>% rbind(indicators_long)                           ## For the plot tab
 
 data <- Admin2table %>%                                                         ## for the data explorer tab
   dplyr::rename(Date=date, Governorate=government_name, District=district_name) %>%

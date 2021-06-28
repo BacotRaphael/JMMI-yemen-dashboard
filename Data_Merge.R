@@ -64,7 +64,6 @@ March_2021 <-read_excel("37.REACH_YEM_Dataset_Joint Market Monitoring Initiative
 April_2021 <- read_excel("38.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April 2021.xlsx", sheet = 3) %>% mutate(jmmi="April_2021")
 May_2021 <- read_excel("39.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May 2021.xlsx", sheet = 3) %>% mutate(jmmi="May_2021")
 
-
 list_df = setNames(lapply(ls(), function(x) get(x)), ls())
 list_df_names <- names(list_df)
 
@@ -74,19 +73,12 @@ source("other scripts/utils.R")                                                 
 list_df <- lapply(list_df, harmonise.df)
 df <- do.call("rbind.fill", list_df)                                            # Trying to rbind.fill all of dataset to keep market functionality questions
 
-col_price <- 
-  colnames(df)[grepl("^calc_*|cost_cubic_meter|exchange_rate_result\\b|fuel_gov_origin|wash_gov_origin|food_gov_origin", colnames(df))]
-col_mkt_functionnality <- 
-  colnames(df)[grepl("mrk|market|sell_|cash_feasibility|COVID", colnames(df))]
-metacol <- 
-  colnames(df)[grepl("jmmi|jmmi_date|^country_|^governorate_*|^district_*", colnames(df))]
+col_price <- colnames(df)[grepl("^calc_*|cost_cubic_meter|exchange_rate_result\\b|fuel_gov_origin|wash_gov_origin|food_gov_origin", colnames(df))]
+col_mkt_functionnality <- colnames(df)[grepl("mrk|market|sell_|cash_feasibility|COVID", colnames(df))]
+metacol <- colnames(df)[grepl("jmmi|jmmi_date|^country_|^governorate_*|^district_*", colnames(df))]
 
-data_all_JMMI <- df %>%                                                           # Rename dataframe to fit rest of the code
-  dplyr::select(-district_name, -governorate_id, -governorate_name)               # Get rid of all other meta columns to only keep streamlined pcodes 
-
-# colnames(df_price)[!colnames(df_price) %in% colnames(data_all_JMMI)] 
-col_to_numeric <- colnames(data_all_JMMI)[grepl("calc|exchange|cost", colnames(data_all_JMMI))]
-data_all_JMMI[col_to_numeric] <- sapply(data_all_JMMI[col_to_numeric], as.numeric)
+data_all_JMMI <- df %>% dplyr::select(-district_name, -governorate_id, -governorate_name) %>% # Rename dataframe to fit rest of the code - Get rid of all other meta columns to only keep streamlined pcodes 
+  mutate_at(vars(matches("calc|exchange|cost")), as.numeric)                          # change type as numeric for relevant columns
 
 #substitute out the pcodes to standardize the name (taken from JMMI scripting, with csv (utf-8) sheet)
 this_script_path<-(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -94,7 +86,7 @@ setwd(this_script_path)
 
 source("./other scripts/add_pcodes.R")
 #debug(add.pcodes)
-data_all_JMMI<-add.pcodes(data_all_JMMI) %>% dplyr::select(matches("country_"), matches("governorate_"), matches("district_"), everything())
+data_all_JMMI<-add.pcodes(data_all_JMMI) %>% dplyr::select(aor, matches("country_"), matches("governorate_"), matches("district_"), everything())
 
 #change Pcodes for origin governorates
 source("./other scripts/gov_code_switch.R")
@@ -117,13 +109,16 @@ data_all_JMMI <- data_all_JMMI %>%
 #this is the actual date that will be sorted by with in the server script
 # data_all_JMMI$jmmi_date_old <- as.character(as.Date(as.yearmon(as.character(data_all_JMMI$jmmi))))
 date_list<-sort(unique(data_all_JMMI$jmmi_date))
+metacol <- c("aor", metacol)
 
-df_mkt_functionnality <- data_all_JMMI %>%                                      # Selects all market functionality indicators
-  dplyr::select(metacol, all_of(col_mkt_functionnality))
-data_all <- data_all_JMMI %>%                                                   # Selects all prices + market functionnality
-  dplyr::select(all_of(metacol), all_of(col_price), all_of(col_mkt_functionnality))
-data_all_JMMI <- data_all_JMMI %>%
-  dplyr::select(all_of(metacol), all_of(col_price))                             # Only keeps prices [for aggregation below]
+# Selects all market functionality indicators
+df_mkt_functionnality <- data_all_JMMI %>% dplyr::select(all_of(metacol), all_of(col_mkt_functionnality))
+
+# Selects all prices + market functionnality
+data_all <- data_all_JMMI %>% dplyr::select(all_of(metacol), all_of(col_price), all_of(col_mkt_functionnality))
+
+# Only keeps prices [for aggregation below]
+data_all_JMMI <- data_all_JMMI %>% dplyr::select(all_of(metacol), all_of(col_price))
 
 # Aggregation loop - will aggregate by median and calculate # of observations for all prices by district and governorate 
 
@@ -237,7 +232,7 @@ for(i in seq_along(date_list)){
     district_all_alone_pct_change<-df_dist%>%
       aggregate_median("district_id")
     
-    district_all_pct_change<-bind_rows(district_all_alone_pct_change,district_all_pct_change) # Add the medians of this months to all past months, based on consistent coverage [That works if ]
+    district_all_pct_change<-bind_rows(district_all_alone_pct_change,district_all_pct_change) # Add the medians of this months to all past months, based on consistent coverage
     
     district_obs_pct_change<-df1%>%
       dplyr::select("district_id","jmmi","jmmi_date")%>%
@@ -281,14 +276,14 @@ national_final_pct_change<-dplyr::full_join(national_all_pct_change,national_obs
 #http://www.sthda.com/english/wiki/reordering-data-frame-columns-in-r
 #http://rprogramming.net/rename-columns-in-r/
 
-district_final<-district_final[,c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(district_final)<-c("date","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+district_final<-district_final[,c("jmmi_date","aor","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(district_final)<-c("date","aor","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-governorate_final<-governorate_final[,c("jmmi_date","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(governorate_final)<-c("date","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+governorate_final<-governorate_final[,c("jmmi_date","aor","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(governorate_final)<-c("date","aor","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-national_final<-national_final[,c("jmmi_date","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(national_final)<-c("date","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+national_final<-national_final[,c("jmmi_date","aor","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(national_final)<-c("date","aor","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
 final_list<-list("District"=district_final,"Governorate" = governorate_final, "National" = national_final)
 
@@ -301,14 +296,14 @@ write.xlsx(final_list, file = "./data/updated_interactive.xlsx")
 #http://www.sthda.com/english/wiki/reordering-data-frame-columns-in-r
 #http://rprogramming.net/rename-columns-in-r/
 
-district_final_pct_change<-district_final_pct_change[,c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(district_final_pct_change)<-c("date","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+district_final_pct_change<-district_final_pct_change[,c("jmmi_date","aor","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(district_final_pct_change)<-c("date","aor","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-governorate_final_pct_change<-governorate_final_pct_change[,c("jmmi_date","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(governorate_final_pct_change)<-c("date","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+governorate_final_pct_change<-governorate_final_pct_change[,c("jmmi_date","aor","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(governorate_final_pct_change)<-c("date","aor","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-national_final_pct_change<-national_final_pct_change[,c("jmmi_date","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(national_final_pct_change)<-c("date","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+national_final_pct_change<-national_final_pct_change[,c("jmmi_date","aor","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
+colnames(national_final_pct_change)<-c("date","aor","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
 final_list_pct_change<-list("District"=district_final_pct_change,"Governorate" = governorate_final_pct_change, "National" = national_final_pct_change)
 
@@ -327,71 +322,4 @@ write.csv(governorate_final_pct_change, file = "./data/governorate_interactive_p
 write.csv(national_final_pct_change, file = "./data/national_interactive_pct_change.csv")
 
 write.csv(data_all, file = "./data/data_all.csv")
-
-# 
-# df_mkt_functionnality_all <- df_mkt_functionnality %>%
-#   dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
-#   dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
-#   dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
-#   dplyr::rename(Date = date,
-#                 Governorate = governorate,
-#                 District = district,
-#                 "mrk_increse_food_100" = mrk_increse_food_100,
-#                 "mrk_increse_food_50" = mrk_increse_food_50,
-#                 "mrk_increse_fuel_100" = mrk_increse_fuel_100,
-#                 "mrk_increse_fuel_50" = mrk_increse_fuel_50,
-#                 "mrk_increse_wash_100" = mrk_increse_wash_100,
-#                 "mrk_increse_wash_50" = mrk_increse_wash_50,
-#                 "mrk_increse_water_100" = mrk_increse_water_100,
-#                 "mrk_increse_water_50" = mrk_increse_water_50,
-#                 "mrk_supply_routes" = mrk_supply_routes) %>%
-#   rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_")) %>%
-#   write.csv("./data/data_all_functionnality.csv")
-
-
-## Note perso: Select the market functionality indicator raw (with right formatting) for further use in the dashboard 
-## [integrate piece of code in the global script of dashboard to include it in the plot tab and data explorer?]
-
-# test <- df_mkt_functionnality %>%
-#   dplyr::select(which(sapply(., unique) %in% c(TRUE, FALSE, 1,0,"yes","no","Yes","No", NA, "NA")), matches("jmmi_date|governorate_name|district_name"))
-# test2 <- df_mkt_functionnality %>%
-#   select_if(~all(unique(.) %in% c(TRUE, FALSE, 1,0,"yes","no","Yes","No",NA, "NA")))
-
-indicators <- df_mkt_functionnality %>%
-  dplyr::select(-matches("country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
-  dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
-  gather(Indicator, Value, 4:(ncol(.))) %>%
-  dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
-  dplyr::group_by(date, governorate, district, Indicator) %>%
-  dplyr::summarise(freq = sum(Value == 1 | Value == "yes" | Value == "Yes", na.rm = TRUE) / sum(!is.na(Value)) * 100) %>%
-  mutate_if(is.numeric, round, 0) %>% 
-  spread(Indicator, freq) %>%
-  dplyr::rename(Date = date,
-                Governorate = governorate,
-                District = district,
-                "mrk_increse_food_100" = mrk_increse_food_100,
-                "mrk_increse_food_50" = mrk_increse_food_50,
-                "mrk_increse_fuel_100" = mrk_increse_fuel_100,
-                "mrk_increse_fuel_50" = mrk_increse_fuel_50,
-                "mrk_increse_wash_100" = mrk_increse_wash_100,
-                "mrk_increse_wash_50" = mrk_increse_wash_50,
-                "mrk_increse_water_100" = mrk_increse_water_100,
-                "mrk_increse_water_50" = mrk_increse_water_50,
-                "mrk_supply_routes" = mrk_supply_routes) %>%
-  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_"))
-
-indicators %>% write.xlsx("data/market functionnality indicators.xlsx")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+write.csv(df_mkt_functionnality, "data/data_market_functionnality.csv")

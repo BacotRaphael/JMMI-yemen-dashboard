@@ -1,24 +1,6 @@
 #GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL GLOBAL
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-# Install/Load libraries
-# library(utils)
-# if (!require("pacman")) install.packages("pacman")
-# pacman::p_load(devtools, usethis, shiny, shinyjs, rgdal, dplyr, leaflet, highcharter, zoo, ggplot2, rgeos, classInt, geosphere,
-#                shinythemes, sf, purrr, shinydashboard, readxl, DT, formattable, tibble, curl, sp, stringr, shinyWidgets,
-#                leaflet.extras, kableExtra, tidytidbits, data.table, openxlsx, sass)
-# packages <- c("devtools", "usethis", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "classInt", "geosphere", "shinythemes", "sf", "purrr", "shinydashboard",
-#               "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets", "leaflet.extras", "kableExtra", "tidytidbits", "data.table", "openxlsx",
-#                   "sass", "Matrix", "robustbase", "rgl", "minpack.lm", "googlesheets", "tidyselect", "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices","datasets", "methods")
-# packages1 <- c("devtools", "shiny", "shinyjs", "rgdal", "dplyr", "leaflet", "highcharter", "zoo", "ggplot2", "rgeos", "geosphere",
-#               "shinythemes", "sf", "purrr", "shinydashboard", "readxl", "DT", "formattable", "tibble", "curl", "sp", "stringr", "shinyWidgets",
-#               "leaflet.extras", "tidytidbits", "data.table", "openxlsx", "tidyr", "sass")
-
-# pacman::p_load(char = packages1)
-# p_load_gh("mabafaba/reachR")
-# other.packages <- c("googlesheets", "reachR", "qpcR", "Matrix", "robustbase", "rgl", "minpack.lm", "MASS", "tidyselect",
-#                     "lubridate", "plyr", "tidyr", "stats", "graphics", "grDevices", "utils", "datasets", "methods")
-
 #install packages
 library(devtools)
 library(usethis)
@@ -50,10 +32,8 @@ library(kableExtra)
 library(tidytidbits)
 library(data.table)
 library(openxlsx)
-# remove.packages("sass")
-# install.packages("sass")
 # library("sass")
-# packageVersion("sass")
+
 
 smeb <- data.frame(SMEB = c(rep("SMEB Wash", 4), rep("SMEB Wash", 5)),                                  # define SMEB content table
                    Category = c(rep("Non-Food Items", 3), "Water", rep("Food Items", 5)),
@@ -67,110 +47,6 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
                "rgb(210,228,208)", "rgb(171,217,230)", "rgb(251,207,176)",
                "rgb(255,251,189)", "rgb(233,229,220)")
 
-addLegend_decreasing <- function (map, position = c("topright", "bottomright", "bottomleft", 
-                                                    "topleft"), pal, values, na.label = "NA", bins = 7, colors, 
-                                  opacity = 0.5, labels = NULL, labFormat = labelFormat(), 
-                                  title = NULL, className = "info legend", layerId = NULL, 
-                                  group = NULL, data = getMapData(map), decreasing = FALSE) {
-  position <- match.arg(position)
-  type <- "unknown"
-  na.color <- NULL
-  extra <- NULL
-  if (!missing(pal)) {
-    if (!missing(colors)) 
-      stop("You must provide either 'pal' or 'colors' (not both)")
-    if (missing(title) && inherits(values, "formula")) 
-      title <- deparse(values[[2]])
-    values <- evalFormula(values, data)
-    type <- attr(pal, "colorType", exact = TRUE)
-    args <- attr(pal, "colorArgs", exact = TRUE)
-    na.color <- args$na.color
-    if (!is.null(na.color) && col2rgb(na.color, alpha = TRUE)[[4]] == 
-        0) {
-      na.color <- NULL
-    }
-    if (type != "numeric" && !missing(bins)) 
-      warning("'bins' is ignored because the palette type is not numeric")
-    if (type == "numeric") {
-      cuts <- if (length(bins) == 1) 
-        pretty(values, bins)
-      else bins	
-      
-      if (length(bins) > 2) 
-        if (!all(abs(diff(bins, differences = 2)) <= 
-                 sqrt(.Machine$double.eps))) 
-          stop("The vector of breaks 'bins' must be equally spaced")
-      n <- length(cuts)
-      r <- range(values, na.rm = TRUE)
-      cuts <- cuts[cuts >= r[1] & cuts <= r[2]]
-      n <- length(cuts)
-      p <- (cuts - r[1])/(r[2] - r[1])
-      extra <- list(p_1 = p[1], p_n = p[n])
-      p <- c("", paste0(100 * p, "%"), "")
-      if (decreasing == TRUE){
-        colors <- pal(rev(c(r[1], cuts, r[2])))
-        labels <- rev(labFormat(type = "numeric", cuts))
-      }else{
-        colors <- pal(c(r[1], cuts, r[2]))
-        labels <- rev(labFormat(type = "numeric", cuts))
-      }
-      colors <- paste(colors, p, sep = " ", collapse = ", ")
-      
-    }
-    else if (type == "bin") {
-      cuts <- args$bins
-      n <- length(cuts)
-      mids <- (cuts[-1] + cuts[-n])/2
-      if (decreasing == TRUE){
-        colors <- pal(rev(mids))
-        labels <- rev(labFormat(type = "bin", cuts))
-      }else{
-        colors <- pal(mids)
-        labels <- labFormat(type = "bin", cuts)
-      }
-      
-    }
-    else if (type == "quantile") {
-      p <- args$probs
-      n <- length(p)
-      cuts <- quantile(values, probs = p, na.rm = TRUE)
-      mids <- quantile(values, probs = (p[-1] + p[-n])/2, 
-                       na.rm = TRUE)
-      if (decreasing == TRUE){
-        colors <- pal(rev(mids))
-        labels <- rev(labFormat(type = "quantile", cuts, p))
-      }else{
-        colors <- pal(mids)
-        labels <- labFormat(type = "quantile", cuts, p)
-      }
-    }
-    else if (type == "factor") {
-      v <- sort(unique(na.omit(values)))
-      colors <- pal(v)
-      labels <- labFormat(type = "factor", v)
-      if (decreasing == TRUE){
-        colors <- pal(rev(v))
-        labels <- rev(labFormat(type = "factor", v))
-      }else{
-        colors <- pal(v)
-        labels <- labFormat(type = "factor", v)
-      }
-    }
-    else stop("Palette function not supported")
-    if (!any(is.na(values))) 
-      na.color <- NULL
-  }
-  else {
-    if (length(colors) != length(labels)) 
-      stop("'colors' and 'labels' must be of the same length")
-  }
-  legend <- list(colors = I(unname(colors)), labels = I(unname(labels)), 
-                 na_color = na.color, na_label = na.label, opacity = opacity, 
-                 position = position, type = type, title = title, extra = extra, 
-                 layerId = layerId, className = className, group = group)
-  invokeMethod(map, data, "addLegend", legend)
-}
-
 round_df <- function(df, digits) {
   nums <- vapply(df, is.numeric, FUN.VALUE = logical(1))
   
@@ -180,49 +56,35 @@ round_df <- function(df, digits) {
 }
 
 ##-------------------------- TABULAR DATA WRANGLE ----------------------
+## Uploading national, governorate and district data
+AdminNatData <- read.csv("data/national_interactive.csv") %>% as_tibble() %>% dplyr::select(-X)
+Admin1data <- read.csv("data/governorate_interactive.csv") %>% as_tibble() %>% dplyr::select(-X)                       
+Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr::select(-X)
 
-# Full district database for data explorer KII dataset 
+## SMEB Calculation - update the SMEB in this function only!
+calculate.smeb <- function(df){
+  df <- df %>%
+    mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+           Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0),
+           NFI_Shelter_lumpsum = ifelse(aor == "North", 25000, ifelse(aor == "South", 28750, mean(c(25000,28750)))) %>% round(.,0),
+           Services_lumpsum = ifelse(aor == "North", 19000, ifelse(aor == "South", 21850, mean(c(19000,21850)))) %>% round(.,0),
+           SMEB = ifelse(!is.na(WASH_SMEB) & !is.na(Food_SMEB),
+                         WASH_SMEB + Food_SMEB + NFI_Shelter_lumpsum + Services_lumpsum %>% round(.,0), NA))
+  return(df)
+}
 
-full_data <- read.csv("data/data_all.csv") %>%
-  dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra|mrk_supply_issues")) %>%
-  setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
-           new=c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates")) %>%
-  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour")%>%
-  dplyr::mutate(Date=as.Date(as.yearmon(Date))) %>%
-  dplyr::rename("mrk_increse_food_100" = mrk_increse_food_100,
-                "mrk_increse_food_50" = mrk_increse_food_50,
-                "mrk_increse_fuel_100" = mrk_increse_fuel_100,
-                "mrk_increse_fuel_50" = mrk_increse_fuel_50,
-                "mrk_increse_wash_100" = mrk_increse_wash_100,
-                "mrk_increse_wash_50" = mrk_increse_wash_50,
-                "mrk_increse_water_100" = mrk_increse_water_100,
-                "mrk_increse_water_50" = mrk_increse_water_50,
-                "mrk_supply_routes" = mrk_supply_routes) %>%
-  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_"))
-
-# full_data <- read.csv("data/data_all.csv")%>%
-#   dplyr::select(c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"))%>%
-#   setNames(c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates"))%>%
-#   dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)),
-#          Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)), .before="wheat_flour")%>%
-#   dplyr::mutate(Date=as.Date(as.yearmon(Date)))
-
-Admin1data <- read.csv("data/governorate_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>%
-  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB calculation
-Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr::select(-X) %>% 
-  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB caluclation
-AdminNatData <- read.csv("data/national_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>% 
-  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0))                        #The SMEB caluclation)
+list_admin <- list(AdminNatData, Admin1data, Admin2data)
+names(list_admin) <- c("AdminNatData", "Admin1data", "Admin2data")
+for (df_name in names(list_admin)){
+  list_admin[[df_name]] <- list_admin[[df_name]] %>% calculate.smeb
+  assign(df_name, list_admin[[df_name]])
+}
 
 max_date <- max(as.Date(as.yearmon(AdminNatData$date)))  
 
 #Wrangle Data into appropriate formats
 #Governorates
-Admin1table<-as.data.frame(Admin1data)
+Admin1table <- as.data.frame(Admin1data)
 Admin1table$date2<- as.Date(Admin1table$date, format("%d-%b-%y"), tz="UTC")
 Admin1table$date2 <- as.Date(as.yearmon(Admin1table$date))
 
@@ -252,6 +114,25 @@ AdminNatData_current <- AdminNatTable %>% #subset only recent month dates to att
 currentD <- as.character(format(max(AdminNatTable$date2),"%B %Y"))
   #define current date for display in dashboard
 
+# Full district database for data explorer KII dataset 
+full_data <- read.csv("data/data_all.csv") %>%
+  dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra|mrk_supply_issues")) %>%
+  setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
+           new=c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates")) %>%
+  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour")%>%
+  dplyr::mutate(Date=as.Date(as.yearmon(Date))) %>%
+  dplyr::rename("If the demand for food items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_food_100,
+                "If the demand for food items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_food_50,
+                "If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_fuel_100,
+                "If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_fuel_50,
+                "If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_wash_100,
+                "If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_wash_50,
+                "If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_water_100,
+                "If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_water_50,
+                "Have supply routes changed in a way harmful to your business in the past 30 days?" = mrk_supply_routes) %>%
+  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_"))
+
 # Price long data for Plot tab
 prices_long <- Admin2table %>%
   dplyr::select(date2, government_name:district_ID, everything(), -date, -government_ID, -district_ID) %>%
@@ -260,8 +141,30 @@ prices_long <- Admin2table %>%
   dplyr::rename(Item=name, Price=value)
 
 # Full district database for data explorer + Plot tab
-indicators <- read.xlsx("data/market functionnality indicators.xlsx", check.names = F) %>%
+indicators <- read.csv("data/data_market_functionnality.csv") %>%
+  dplyr::select(-matches("country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
+  dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
+  gather(Indicator, Value, 4:(ncol(.))) %>%
+  dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
+  dplyr::group_by(date, governorate, district, Indicator) %>%
+  dplyr::summarise(freq = sum(Value == 1 | Value == "yes" | Value == "Yes", na.rm = TRUE) / sum(!is.na(Value)) * 100) %>%
+  mutate_if(is.numeric, round, 0) %>% 
+  spread(Indicator, freq) %>%
+  dplyr::rename(Date = date,
+                Governorate = governorate,
+                District = district,
+                "If the demand for food items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_food_100,
+                "If the demand for food items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_food_50,
+                "If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_fuel_100,
+                "If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_fuel_50,
+                "If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_wash_100,
+                "If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_wash_50,
+                "If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_water_100,
+                "If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_water_50,
+                "Have supply routes changed in a way harmful to your business in the past 30 days?" = mrk_supply_routes) %>%
+  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_")) %>%
   setnames(gsub("_", " ", gsub("\\.", " ", colnames(.))))
+
 indicators_long <- indicators %>%
   tidyr::pivot_longer(cols = 4:ncol(.)) %>%
   dplyr::rename(Item=name, Price=value)
@@ -401,7 +304,109 @@ dates_max2 <- sort(unique(Admin2table$date2), decreasing=T)[2]                  
 # dates_min_jram <- min(dates_jram)                                                 # minimum date in JRAM data
 # dates_max_jram <- max(dates_jram)                                                 # maximum date in JRAM data
 
-
+addLegend_decreasing <- function (map, position = c("topright", "bottomright", "bottomleft", 
+                                                    "topleft"), pal, values, na.label = "NA", bins = 7, colors, 
+                                  opacity = 0.5, labels = NULL, labFormat = labelFormat(), 
+                                  title = NULL, className = "info legend", layerId = NULL, 
+                                  group = NULL, data = getMapData(map), decreasing = FALSE) {
+  position <- match.arg(position)
+  type <- "unknown"
+  na.color <- NULL
+  extra <- NULL
+  if (!missing(pal)) {
+    if (!missing(colors)) 
+      stop("You must provide either 'pal' or 'colors' (not both)")
+    if (missing(title) && inherits(values, "formula")) 
+      title <- deparse(values[[2]])
+    values <- evalFormula(values, data)
+    type <- attr(pal, "colorType", exact = TRUE)
+    args <- attr(pal, "colorArgs", exact = TRUE)
+    na.color <- args$na.color
+    if (!is.null(na.color) && col2rgb(na.color, alpha = TRUE)[[4]] == 
+        0) {
+      na.color <- NULL
+    }
+    if (type != "numeric" && !missing(bins)) 
+      warning("'bins' is ignored because the palette type is not numeric")
+    if (type == "numeric") {
+      cuts <- if (length(bins) == 1) 
+        pretty(values, bins)
+      else bins	
+      
+      if (length(bins) > 2) 
+        if (!all(abs(diff(bins, differences = 2)) <= 
+                 sqrt(.Machine$double.eps))) 
+          stop("The vector of breaks 'bins' must be equally spaced")
+      n <- length(cuts)
+      r <- range(values, na.rm = TRUE)
+      cuts <- cuts[cuts >= r[1] & cuts <= r[2]]
+      n <- length(cuts)
+      p <- (cuts - r[1])/(r[2] - r[1])
+      extra <- list(p_1 = p[1], p_n = p[n])
+      p <- c("", paste0(100 * p, "%"), "")
+      if (decreasing == TRUE){
+        colors <- pal(rev(c(r[1], cuts, r[2])))
+        labels <- rev(labFormat(type = "numeric", cuts))
+      }else{
+        colors <- pal(c(r[1], cuts, r[2]))
+        labels <- rev(labFormat(type = "numeric", cuts))
+      }
+      colors <- paste(colors, p, sep = " ", collapse = ", ")
+      
+    }
+    else if (type == "bin") {
+      cuts <- args$bins
+      n <- length(cuts)
+      mids <- (cuts[-1] + cuts[-n])/2
+      if (decreasing == TRUE){
+        colors <- pal(rev(mids))
+        labels <- rev(labFormat(type = "bin", cuts))
+      }else{
+        colors <- pal(mids)
+        labels <- labFormat(type = "bin", cuts)
+      }
+      
+    }
+    else if (type == "quantile") {
+      p <- args$probs
+      n <- length(p)
+      cuts <- quantile(values, probs = p, na.rm = TRUE)
+      mids <- quantile(values, probs = (p[-1] + p[-n])/2, 
+                       na.rm = TRUE)
+      if (decreasing == TRUE){
+        colors <- pal(rev(mids))
+        labels <- rev(labFormat(type = "quantile", cuts, p))
+      }else{
+        colors <- pal(mids)
+        labels <- labFormat(type = "quantile", cuts, p)
+      }
+    }
+    else if (type == "factor") {
+      v <- sort(unique(na.omit(values)))
+      colors <- pal(v)
+      labels <- labFormat(type = "factor", v)
+      if (decreasing == TRUE){
+        colors <- pal(rev(v))
+        labels <- rev(labFormat(type = "factor", v))
+      }else{
+        colors <- pal(v)
+        labels <- labFormat(type = "factor", v)
+      }
+    }
+    else stop("Palette function not supported")
+    if (!any(is.na(values))) 
+      na.color <- NULL
+  }
+  else {
+    if (length(colors) != length(labels)) 
+      stop("'colors' and 'labels' must be of the same length")
+  }
+  legend <- list(colors = I(unname(colors)), labels = I(unname(labels)), 
+                 na_color = na.color, na_label = na.label, opacity = opacity, 
+                 position = position, type = type, title = title, extra = extra, 
+                 layerId = layerId, className = className, group = group)
+  invokeMethod(map, data, "addLegend", legend)
+}
 
 
 

@@ -1,14 +1,23 @@
 add.pcodes<-function(data){
   #library("dplyr")
   pcode.data <- read.csv("other scripts/pcodes/yem_admin_20171007.csv",header=T,sep=",", encoding = "UTF-8", check.names=F, stringsAsFactors=FALSE)
-  pcode <- as.data.frame(pcode.data) %>%
+  aor2 <- read.csv("other scripts/pcodes/aor_admin2.csv") %>% 
+    mutate(aor=ifelse(control_north == 1 & control_south == 0, "North",
+                      ifelse(control_north == 0 & control_south == 1, "South",
+                             ifelse(control_north == 1 & control_south == 1, "Disputed area", ""))))
+  aor3 <- read.csv("other scripts/pcodes/aor_admin3.csv") %>% 
+    mutate(aor=ifelse(control_north == 1 & control_south == 0, "North",
+                      ifelse(control_north == 0 & control_south == 1, "South",
+                             ifelse(control_north == 1 & control_south == 1, "Disputed area", ""))))
+  pcode <- as.data.frame(pcode.data) %>% 
+    left_join(aor2 %>% dplyr::select(admin2Pcode, aor), by = "admin2Pcode") %>%
     dplyr::select(-admin2Name_en, -admin2OldPcode) %>%
     dplyr::rename(governorate_name=admin1Name_en,
                   governorate_id=admin1Pcode,
                   district_name=admin2RefName_en,
                   district_id=admin2Pcode,
                   country_name=admin0Name_en,
-                  country_id=admin0Pcode)
+                  country_id=admin0Pcode) 
   data <- data %>% 
     dplyr::select(-any_of(c("country_id", "country_name", "district_name", "governorate_id", "governorate_name"))) %>%
     left_join(pcode, by="district_id")
