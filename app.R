@@ -152,10 +152,44 @@ round_df <- function(df, digits) {
 
 ##-------------------------- TABULAR DATA WRANGLE ----------------------
 
+# Full database for data explorer at KII level 
+full_data <- read.csv("data/data_all.csv") %>%
+  dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra"), -ends_with("mrk_supply_issues"), -ends_with("other"), -ends_with("not_answer")) %>%
+  setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
+           new=c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates")) %>%
+  # dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
+  # Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour") %>%
+  dplyr::mutate(Date=as.Date(as.yearmon(Date))) 
+  
+# Full database for data explorer at district level + Plot tab
+indicators <- read.csv("data/data_market_functionnality.csv") %>%
+  dplyr::select(-matches("X|country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra"), -ends_with("mrk_supply_issues"), -ends_with("other"), -ends_with("not_answer")) %>%
+  dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
+  gather(Indicator, Value, 4:(ncol(.))) %>%
+  dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
+  dplyr::group_by(date, governorate, district, Indicator) %>%
+  dplyr::summarise(freq = sum(Value == 1 | Value == "yes" | Value == "Yes", na.rm = TRUE) / sum(!is.na(Value)) * 100) %>%
+  mutate_if(is.numeric, round, 0) %>% mutate(freq=ifelse(is.nan(freq), NA, freq)) %>%
+  spread(Indicator, freq) %>%
+  dplyr::rename(Date = date, Governorate = governorate, District = district) %>% ungroup
+
+indicators_long <- indicators %>%
+  tidyr::pivot_longer(cols = 4:ncol(.)) %>%
+  dplyr::rename(Item=name, Price=value)
+
+# Summarizing market functionnality indicators at gov and national level
+indicators_admin1 <- indicators %>% dplyr::select(-District) %>% group_by(Date, Governorate) %>%
+  summarise_at(vars(-group_cols()), ~mean(., na.rm=T)) %>% mutate_at(vars(-group_cols()), ~ifelse(is.nan(.), NA, .))
+indicators_admin0 <- indicators %>% dplyr::select(-District, -Governorate) %>% group_by(Date) %>%
+  summarise_at(vars(-group_cols()), ~mean(., na.rm=T))%>% mutate_at(vars(-group_cols()), ~ifelse(is.nan(.), NA, .))
+
 ## Uploading national, governorate and district data
-AdminNatData <- read.csv("data/national_interactive.csv") %>% as_tibble() %>% dplyr::select(-X)
-Admin1data <- read.csv("data/governorate_interactive.csv") %>% as_tibble() %>% dplyr::select(-X)                       
-Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr::select(-X)
+AdminNatData <- read.csv("data/national_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>%
+  left_join(indicators_admin0, by=c("date"="Date"))
+Admin1data <- read.csv("data/governorate_interactive.csv") %>% as_tibble() %>% dplyr::select(-X) %>%
+  left_join(indicators_admin1, by=c("date"="Date", "government_name"="Governorate"))                       
+Admin2data <- read.csv("data/district_interactive.csv") %>% as_tibble()%>% dplyr::select(-X) %>%
+  left_join(indicators, by = c("date"="Date", "government_name"="Governorate", "district_name"="District"))
 
 ## SMEB Calculation - update the SMEB in this function only!
 calculate.smeb <- function(df){
@@ -206,54 +240,6 @@ AdminNatTable <- AdminNatData %>% mutate_at(vars(-matches("date|aor")), ~ round(
 AdminNatData_current <- AdminNatTable %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
 currentD <- as.character(format(max(AdminNatTable$date2),"%B %Y"))                                  # define current date for display in dashboard
 
-# Full database for data explorer at KII level 
-full_data <- read.csv("data/data_all.csv") %>%
-  dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra|mrk_supply_issues")) %>%
-  setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
-           new=c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates")) %>%
-  dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0),
-                Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour")%>%
-  dplyr::mutate(Date=as.Date(as.yearmon(Date))) %>%
-  dplyr::rename("If the demand for food items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_food_100,
-                "If the demand for food items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_food_50,
-                "If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_fuel_100,
-                "If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_fuel_50,
-                "If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_wash_100,
-                "If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_wash_50,
-                "If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_water_100,
-                "If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_water_50,
-                "Have supply routes changed in a way harmful to your business in the past 30 days?" = mrk_supply_routes) %>%
-  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_"))
-
-# Full database for data explorer at district level + Plot tab
-indicators <- read.csv("data/data_market_functionnality.csv") %>%
-  dplyr::select(-matches("X|country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra|mrk_supply_issues")) %>%
-  dplyr::select(jmmi_date, governorate_name, district_name, 7:ncol(.)) %>%
-  gather(Indicator, Value, 4:(ncol(.))) %>%
-  dplyr::rename(date=jmmi_date, governorate=governorate_name, district=district_name) %>%
-  dplyr::group_by(date, governorate, district, Indicator) %>%
-  dplyr::summarise(freq = sum(Value == 1 | Value == "yes" | Value == "Yes", na.rm = TRUE) / sum(!is.na(Value)) * 100) %>%
-  mutate_if(is.numeric, round, 0) %>% 
-  spread(Indicator, freq) %>%
-  dplyr::rename(Date = date,
-                Governorate = governorate,
-                District = district,
-                "If the demand for food items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_food_100,
-                "If the demand for food items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_food_50,
-                "If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_fuel_100,
-                "If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_fuel_50,
-                "If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_wash_100,
-                "If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_wash_50,
-                "If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?" = mrk_increse_water_100,
-                "If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?" = mrk_increse_water_50,
-                "Have supply routes changed in a way harmful to your business in the past 30 days?" = mrk_supply_routes) %>%
-  rename_with(~paste0("% of traders reporting selling ", gsub("_", " ", gsub("sell_", "", .))), matches("sell_")) %>%
-  setnames(gsub("_", " ", gsub("\\.", " ", colnames(.))))
-
-indicators_long <- indicators %>%
-  tidyr::pivot_longer(cols = 4:ncol(.)) %>%
-  dplyr::rename(Item=name, Price=value)
-
 # Price long data for Plot tab
 prices_long <- Admin2table %>%
   dplyr::select(date2, government_name:district_ID, everything(), -date, -government_ID, -district_ID, -aor) %>%
@@ -264,23 +250,28 @@ prices_long <- Admin2table %>%
 prices_long <- prices_long %>% rbind(indicators_long)                           ## For the plot tab
 
 data <- Admin2table %>%                                                         ## for the data explorer tab
-  dplyr::rename(Date=date, Governorate=government_name, District=district_name) %>%
-  left_join(indicators, by = c("Date", "Governorate", "District"))
+  dplyr::rename(Date=date, Governorate=government_name, District=district_name) 
+# %>% left_join(indicators, by = c("Date", "Governorate", "District"))
 
 ##-------------------------- SPATIAL DATA WRANGLE ----------------------
-#Read in shapefiles
+# Admin1 <- st_read(dsn = "gis/yem_adm_govyem_cso_ochayemen_20191002_GDB.gdb", layer="yem_admbnda_adm1_govyem_cso") 
+# Admin2 <- st_read(dsn = "gis/yem_adm_govyem_cso_ochayemen_20191002_GDB.gdb", layer="yem_admbnda_adm2_govyem_cso") 
+# Rshp <- Admin2 %>% left_join(Admin2table, by=c("admin2pcod"="district_ID"))
+# Admin1 <- Admin1 %>% left_join(Admin1table, by=c("admin1pcod"="government_ID"))
+# DistsNumb <- sum(!is.na(Rshp %>% filter(date2==max(Rshp$date2, na.rm=T)) %>% dplyr::select(district_name)))
+
+# Read in shapefiles
 Admin1<- readOGR("./www", "YEM_adm1_Governorates")
 Admin2<- readOGR("./www", "YEM_adm2_Districts")
 
 Admin1@data$admin1name<-gsub("Amanat Al Asimah", "Sana'a City", Admin1@data$admin1name)
 Admin1@data$admin1refn<-gsub("Amanat Al Asimah", "Sana'a City", Admin1@data$admin1refn)
 Admin2@data$admin1name<-gsub("Amanat Al Asimah", "Sana'a City", Admin2@data$admin1name)
-Admin2@data<- Admin2@data %>% dplyr::mutate_if(is.factor, as.character) 
+Admin2@data<- Admin2@data %>% dplyr::mutate_if(is.factor, as.character)
 
 ##-------------------------- COMBINE TABULAR & SPATIAL DATA----------------------
 #Merge data from Google Sheet with Rayon shp file
 Rshp <- merge(x=Admin2,y=Admin2data_current, by.x="admin2pcod", by.y= "district_ID")
-
 DistsNumb <- sum(!is.na(Rshp@data$district_name))                               # get number of districts covered...
 
 Rshp <- st_simplify(st_as_sf(Rshp), dTolerance = 0.5)
@@ -299,18 +290,18 @@ colnames(centroids) <- c("lon", "lat")
 centroids <- data.frame("ID" = 1:nrow(centroids), centroids)
 
 # Create SpatialPointsDataFrame object
-coordinates(centroids) <- c("lon", "lat") 
+coordinates(centroids) <- c("lon", "lat")
 proj4string(centroids) <- sp::proj4string(Admin1) # assign projection
 centroids@data <- sp::over(x = centroids, y = Admin1, returnList = FALSE)
 centroids1 <- as.data.frame(centroid(Admin1))
 colnames(centroids1) <- c("lon", "lat")
 centroids@data <- cbind(centroids@data, centroids1)
 
-#YEMEN LABEL
+# #YEMEN LABEL
 YEMl <- as.data.frame(cbind(48.5164,15.5527))
 colnames(YEMl) <- c("lon", "lat")
 YEMl <- data.frame("ID" = 1:nrow(YEMl), YEMl)
-coordinates(YEMl) <- c("lon", "lat") 
+coordinates(YEMl) <- c("lon", "lat")
 proj4string(YEMl) <- proj4string(Admin1)
 UKRl1<- as.data.frame(cbind(48.5164,15.5527))
 YEMl@data<-cbind(YEMl@data, "YEMEN", UKRl1 )
@@ -345,12 +336,29 @@ vars <- c(
   "Water Trucking"= "cost_cubic_meter"
 )
 
+vars_functionnality <- colnames(indicators)[-(1:3)]
+names(vars_functionnality) <- 
+  c("If the demand for food items were to increase by 100%, would you be able to respond to this increase?",
+    "If the demand for food items were to increase by 50%, would you be able to respond to this increase?",
+    "If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?",
+    "If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?",
+    "If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?",
+    "If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?",
+    "If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?",
+    "If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?",
+    "Supply issues: Destruction/damage to storage capacity",
+    "Supply issues: Movement restrictions (check points, curfews, roadblocks, etc)",
+    "Have supply routes changed in a way harmful to your business in the past 30 days?",
+    paste0("% of vendors ", gsub("sell", "selling", gsub("_", " ", vars_functionnality[grepl("sell", vars_functionnality)])))
+     )
+n_mkt_fun <- length(vars_functionnality)
+
 title.legend <- c("SMEB Cost", "WASH SMEB Cost", "Food SMEB Cost", "YER to 1 USD", "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)", 
                   "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 L)", "Price (1 L)", "Price (0.75 L)", "Price (10 L)", 
                   "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)",
-                  rep("	% of traders", 28))
+                  rep("	% of traders", n_mkt_fun))
 unit <- c(rep(" YER", 22),
-          rep(" %", 28))
+          rep(" %", n_mkt_fun))
 
 ## Setting custom maps color palettes for all items:
 pal1 <- colorRamp(c("#ADFFA5", "#A7383D", "#420A0D"), interpolate="linear")
@@ -361,7 +369,7 @@ pal5 <- colorRamp(c("#C7C0FF", "#7A6AFF", "#1501B9", "#0A005D", "#050033"), inte
 
 palette <- c(pal1, pal1, "Greens", "Greens", pal2, "YlOrBr", pal2, "BuPu","RdPu", pal3, "Greens", pal3,
              "Greens", "Greens", "YlOrBr", pal4, pal5, pal2, "RdPu", "Purples", "BuPu", pal3, 
-             rep("YlOrBr", 28))                                                 # keep same palette for the market functionality indicators
+             rep("YlOrBr", n_mkt_fun))                                          # keep same palette for the market functionality indicators
 
 indicator_group <- c(rep("I. Indices", 3), 
                      "II. Currencies",
@@ -370,11 +378,9 @@ indicator_group <- c(rep("I. Indices", 3),
                      rep("V. Water", 2),
                      rep("VI. Non-food items", 3),
                      "V. Water",
-                     rep("VI. Other indicators", 28))
+                     rep("VI. Other indicators", n_mkt_fun))
 
 # Indicator_list => will determine drop down list + legend + palettes for maps
-vars_functionnality <- colnames(indicators)[-(1:3)]
-names(vars_functionnality) <- vars_functionnality
 
 indicator_list <- data.frame(Item=names(c(vars, vars_functionnality)),
                              Variable=unname(c(vars, vars_functionnality)),
@@ -441,7 +447,7 @@ ui <- function(){
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 60, left = "auto", right = 20, bottom = 1,
                                         # width = 500,
-                                        width = "30%",
+                                        width = "40%",
                                         height = "auto",
 
                                         hr(),
@@ -462,8 +468,17 @@ ui <- function(){
                                         #h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
                                         #   tags$strong(DistsNumb), "districts in ", tags$strong(currentD))),
 
-                                        selectInput("variable1", h4("Select Variable Below"), vars, selected = "Food_SMEB"), #linked text
-
+                                        # selectInput("variable1", h4("Select Variable Below"), vars, selected = "Food_SMEB"), #linked text
+                                        
+                                        pickerInput("variable1",
+                                                    label = "Select a variable below",
+                                                    # choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list)[1:6],
+                                                    # choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list),
+                                                    choices = lapply(split(indicator_list$Item, indicator_list$Group), as.list),
+                                                    options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                    selected = "SMEB",
+                                                    multiple = FALSE
+                                        ),
 
                                         h5(textOutput("text3")), #extra small text which had to be customized as an html output in server.r (same with text1 and text 2)
 
@@ -675,17 +690,17 @@ ui <- function(){
                                           #   HTML(smeb_kbl),
                                           #   width = 6),
                                           column(p(h6("The Survival Minimum Expenditure Basket (SMEB) represents the minimum culturally adjusted group of items
-                                                               required to support a six-person Iraqi household for one month, as defined by the CWG."))
-                                                 # ,
-                                                 # p(h6("The SMEB reported on this website only includes the food, NFI and water components. Not included are rent,
-                                                 #               electricity, communication and transportation.")),
+                                                               required to support a six-person Yemeni household for one month, as defined by the CWG."))
+                                                 ,
+                                                 p(h6("The SMEB reported on this website only includes the food and water components, including a lump sump amount for
+                                                               services(electricity, communication and transportation) and non-food items.")),
                                                  # p(h6("The composition of the SMEB was revised twice: 1) In the September
-                                                 #               2018 round and onwards, the current water component replaced the fuel component. 2) Since January 2020,
+                                                               # 2018 round and onwards, the current water component replaced the fuel component. 2) Since January 2020,
                                                  #               the SMEB furthermore includes modified food and NFI components.")),
                                                  # p(h6("More details on the SMEB can be found here:",
                                                  #      tags$a(href="https://www.humanitarianresponse.info/en/operations/iraq/document/survival-minimum-expenditure-basket-technical-guidance-note-october-2019",
                                                  #             "SMEB Guidance Note"), "."))
-                                                 ,
+                                                 # ,
                                                  width = 5),
                                           width = "650px",
                                           # tooltip = tooltipOptions(title = "Click for more details on the SMEB."),
@@ -970,7 +985,8 @@ server <- function(input, output,session) {
   
   # "observe" inputs to define variables for map colors, titles, legends and subset district data
   observe({
-    VARIA <- input$variable1
+    # VARIA <- input$variable1
+    VARIA <- indicator_list[indicator_list$Item==input$variable1, "Variable"]
     metacol <- c("admin2pcod", "admin1name", "admin1pcod", "admin2name", "admin2refn")
     metacol2 <- c("num_obs", "date2")
     
@@ -1007,41 +1023,41 @@ server <- function(input, output,session) {
       clearShapes() %>%                                                         # clear polygons, so new ones can be added
       clearControls()%>%                                                        # reset zoom etc
 
-      addLabelOnlyMarkers(centroids,                                            # ADD governorate LABELS
-                          lat=centroids$lat,
-                          lng=centroids$lon,
-                          label=as.character(centroids$admin1name),
-                          labelOptions = leaflet::labelOptions(
-                            noHide = TRUE,
-                            interactive = FALSE,
-                            direction = "bottom",
-                            textOnly = TRUE,
-                            offset = c(0, -10),
-                            opacity = 0.6,
-                            style = list(
-                              "color"= "black",
-                              "font-size" = "13px",
-                              "font-family"= "Helvetica",
-                              "font-weight"= 600)
-                          )) %>%
+      # addLabelOnlyMarkers(centroids,                                            # ADD governorate LABELS
+      #                     lat=centroids$lat,
+      #                     lng=centroids$lon,
+      #                     label=as.character(centroids$admin1name),
+      #                     labelOptions = leaflet::labelOptions(
+      #                       noHide = TRUE,
+      #                       interactive = FALSE,
+      #                       direction = "bottom",
+      #                       textOnly = TRUE,
+      #                       offset = c(0, -10),
+      #                       opacity = 0.6,
+      #                       style = list(
+      #                         "color"= "black",
+      #                         "font-size" = "13px",
+      #                         "font-family"= "Helvetica",
+      #                         "font-weight"= 600)
+      #                     )) %>%
 
-      addLabelOnlyMarkers(YEMl, lat=YEMl$lat,                                   # Add Yemen label
-                          lng=YEMl$lon,
-                          label=as.character(YEMl$name),
-                          labelOptions = leaflet::labelOptions(
-                            noHide = TRUE,
-                            interactive = FALSE,
-                            direction = "bottom",
-                            textOnly = TRUE,
-                            offset = c(0, -10),
-                            opacity = 1,
-                            style = list(
-                              "color"= "black",
-                              "font-size" = "24px",
-                              "font-family"= "Helvetica",
-                              "font-weight"= 800,
-                              "letter-spacing"= "3px")
-                          )) %>%
+      # addLabelOnlyMarkers(YEMl, lat=YEMl$lat,                                   # Add Yemen label
+      #                     lng=YEMl$lon,
+      #                     label=as.character(YEMl$name),
+      #                     labelOptions = leaflet::labelOptions(
+      #                       noHide = TRUE,
+      #                       interactive = FALSE,
+      #                       direction = "bottom",
+      #                       textOnly = TRUE,
+      #                       offset = c(0, -10),
+      #                       opacity = 1,
+      #                       style = list(
+      #                         "color"= "black",
+      #                         "font-size" = "24px",
+      #                         "font-family"= "Helvetica",
+      #                         "font-weight"= 800,
+      #                         "letter-spacing"= "3px")
+      #                     )) %>%
 
       addPolygons(data= dataM,                                                  # Add subsetted district shapefiles
                   color = "grey",
@@ -1148,24 +1164,26 @@ server <- function(input, output,session) {
   })
 
   state_data <- reactive({ #subset JMMI data table based on clicked state
-    all_dat<-right_join(dist_data(),gov_nat_data(), by = "date2")#using a full join so that the data that was for the other month when district wasnt select is still shown
+    all_dat<-right_join(dist_data(),gov_nat_data(), by = "date2")               # using a full join so that the data that was for the other month when district wasnt select is still shown
     all_dat$date<-as.yearmon(all_dat$date2)
     all_dat
   })
 
   chartData1<-reactive({  #subset JMMI data table based on variable of interest (soap, water etc)
     metacol<-c("date", "government_name.x",  "government_ID.x", "district_name", "district_ID")
-    var <- as.character(input$variable1)
+    # var <- as.character(input$variable1)
+    var <- indicator_list[indicator_list$Item==input$variable1, "Variable"]
     # var="WASH_SMEB"
     # clicked_state<-"YE1514"
     # state_data <- right_join(Admin2table[Admin2table$district_ID==clicked_state,], right_join(Admin1table[Admin1table$government_ID==substr(clicked_state,1,4),], AdminNatTable, by = "date2"), by = "date2")
-    r <- state_data() %>% dplyr::select(all_of(metacol), var, "date2", contains(paste0(var,".")), contains("num_obs"))
+    r <- state_data() %>% dplyr::select(all_of(metacol), var, "date2", starts_with(paste0(var,".")), contains("num_obs"))
     colnames(r) <- c("date","government_name","government_ID","district_name","district_ID","variableSEL","date2","governorate_val","nat_val","dist_obs","gov_obs","nat_obs")
     r
   })
 
   chartNAME<-reactive({
-    y = indicator_list[indicator_list$Variable==input$variable1,"Item"] %>% as.character  #define element to be used as title for selected variable
+    # y = indicator_list[indicator_list$Variable==input$variable1,"Item"] %>% as.character  #define element to be used as title for selected variable
+    y = input$variable1 %>% as.character  #define element to be used as title for selected variable
     })
 
   #_________________________Create highcharter element which uses dataset filtered by user inputs___________________
@@ -1191,13 +1209,16 @@ server <- function(input, output,session) {
     highchart() %>% # high chart
       hc_xAxis(type = "datetime", dateTimeLabelFormats = list(day = '%b %Y')) %>%
       #data for national
-      hc_add_series(data=ChartDat, type = "line", hcaes(date2, nat_val), color = "dodgerblue", name=paste(chartNAME(),"-National")) %>%
+      hc_add_series(data=ChartDat, type = "line", hcaes(date2, nat_val), color = "dodgerblue", name=paste(chartNAME(),"- National")) %>%
       #data for governorate
-      hc_add_series(data=ChartDat, type = "line", hcaes(date2, governorate_val), color = "forestgreen", name=paste(chartNAME(),"-Governorate")) %>%
+      hc_add_series(data=ChartDat, type = "line", hcaes(date2, governorate_val), color = "forestgreen", name=paste(chartNAME(),"- Governorate")) %>%
       #data for district
-      hc_add_series(data=ChartDat, type = "line", hcaes(date2, variableSEL), color="#4F4E51", name=paste(chartNAME(),"-District")) %>%
+      hc_add_series(data=ChartDat, type = "line", hcaes(date2, variableSEL), color="#4F4E51", name=paste(chartNAME(),"- District")) %>%
       
-      hc_yAxis(tithcle=list(text=paste0(chartNAME()," in YER")), opposite = FALSE
+      hc_yAxis(tithcle=list(
+        text=paste0(chartNAME()," in YER")
+        # text = "Price in YER test"
+        ), opposite = FALSE
                #,min= as.numeric(y_min), max= as.numeric(y_max)
       ) %>%
       hc_title(text=chosenD) %>%
@@ -1252,7 +1273,11 @@ server <- function(input, output,session) {
     })
 
   output$text3 <- renderText({                                                  # LARGE TEXT ABOVE CHART
-    paste(chartNAME(), " ", "Medians Over Time")
+    if (indicator_list[indicator_list$Item==input$variable1, "Group"] %in% c("VI. Other indicators")) {
+      paste(chartNAME(), " ", "Average Over Time")
+    } else {paste(chartNAME(), " ", "Medians Over Time")}
+    
+    # paste(chartNAME(), " ", "Medians Over Time")
     })
 
   output$text_DT<-renderText({
@@ -1519,7 +1544,7 @@ server <- function(input, output,session) {
       graph <- hcboxplot(x = plot_datasetInput()$Price, var = plot_datasetInput()$Item, outliers = FALSE) %>%
         hc_chart(type = "column") %>%
         hc_tooltip(valueSuffix = " IQD") %>%
-        hc_yAxis(min = 0, title = list(text = "Price (in IQD)")) %>%
+        hc_yAxis(min = 0, title = list(text = "Price (in YER)")) %>%
         hc_exporting(
           enabled = TRUE,
           filename = paste0("IRQ-JPMI-boxplot_export-", Sys.Date()),
