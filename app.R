@@ -580,7 +580,7 @@ ui <- function(){
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
                             top = "50", left = "800", right = "auto", bottom = "auto",
-                            width = "400", height = "740",
+                            width = "400", height = "755",
                             h4(paste0("Overall Median Item Prices", " (", format(dates_max, "%b"), " ", format(dates_max, "%Y"), ")")),
                             HTML(table_changes), br()
                           ),
@@ -619,88 +619,88 @@ ui <- function(){
                                         tags$a(href='https://www.reach-initiative.org', target = "_blank", tags$img(src='reach_logoInforming.jpg', height='40'))),
                           
                           # display partner logos on bottom right
-                          absolutePanel(id = "logo", class = "card", bottom = ver<-500, left = (anchor<-1230), fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver<-100, left = (anchor<-1230), fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.acted.org/en/countries/yemen/', target = "_blank", tags$img(src='0_acted.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver, left = anchor+85, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver, left = anchor+85, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_almaroof.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver, left = anchor+150, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver, left = anchor+150, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://adra.org/', target = "_blank", tags$img(src='0_adra.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver, left = anchor+205, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver, left = anchor+205, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_thadamon.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver, left = anchor+280, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver, left = anchor+280, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_b4d.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='http://bchr-ye.org/', target = "_blank", tags$img(src='0_bchr.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+60, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+60, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.facebook.com/cyf.org77/', target = "_blank", tags$img(src='0_cyf.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+100, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+100, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='http://www.drc.dk', target = "_blank", tags$img(src='0_drc.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+175, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+175, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.facebook.com/noqat.org/', target = "_blank", tags$img(src='0_gwq.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+210, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+210, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.iom.int/countries/yemen', target = "_blank", tags$img(src='0_iom.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+275, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+275, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.rescue.org/', target = "_blank", tags$img(src='0_IRC.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+310, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+310, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.mercycorps.org/where-we-work/yemen', target = "_blank", tags$img(src='0_mercy.jfif', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+340, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+340, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='http://nfdhr.org/', target = "_blank", tags$img(src='0_nfdhr.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_nfhd.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor+80, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor+80, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.nrc.no/countries/middle-east/yemen/', target = "_blank", tags$img(src='0_nrc.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor+180, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor+180, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_ocfd.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor+230, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor+230, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.oxfam.org/en/tags/yemen', target = "_blank", tags$img(src='0_oxfam.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor+325, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor+325, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://rocye.org/', target = "_blank", tags$img(src= '0_roc.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://yemen.savethechildren.net/', target = "_blank", tags$img(src='0_sci.png', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor+120, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor+120, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_steps.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor+160, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor+160, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.facebook.com/TamdeenYouth/', target = "_blank", tags$img(src='0_soul.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor+295, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor+295, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='http://yfca.org/en/', target = "_blank", tags$img(src='0_yfca.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor+360, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor+360, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_ysd.jpg', height='30'))),
 
-                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+260, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.solidarites.org/en/missions/yemen/', target = "_blank", tags$img(src='0_si.jpeg', height='30'))),
                           
-                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor+50, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+260, left = anchor+50, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_tyf.png', height='30'))),
                           
-                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor+160, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+260, left = anchor+160, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_vision.png', height='30'))),
                           
-                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor+235, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+260, left = anchor+235, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.zoa-international.com/files/yemen/', target = "_blank", tags$img(src='0_zoa.PNG', height='30'))),
                           
-                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor+310, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver+260, left = anchor+310, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.facebook.com/sama.alyemen.5', target = "_blank", tags$img(src='0_sama.jpg', height='30')))
                           
                           
