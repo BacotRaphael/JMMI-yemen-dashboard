@@ -222,52 +222,44 @@ for(i in seq_along(date_list)){
 
 #join the observations and the values
 
-district_final<-dplyr::full_join(district_all,district_obs, by = c("district_id", "jmmi"))
-governorate_final<-dplyr::full_join(governorate_all,governorate_obs, by = c("governorate_id", "jmmi"))
-national_final<-dplyr::full_join(national_all,national_obs, by = c("country_id", "jmmi"))
+district_final <- dplyr::full_join(district_all,district_obs, by = c("district_id", "jmmi"))
+governorate_final <- dplyr::full_join(governorate_all,governorate_obs, by = c("governorate_id", "jmmi")) %>% dplyr::select(-starts_with("district"))
+national_final <- dplyr::full_join(national_all,national_obs, by = c("country_id", "jmmi")) %>% dplyr::select(-starts_with("district"), -starts_with("governorate"))
 
 district_final_pct_change <- dplyr::full_join(district_all_pct_change,district_obs_pct_change, by = c("district_id", "jmmi"))
-governorate_final_pct_change <- dplyr::full_join(governorate_all_alone_pct_change,governorate_obs_pct_change, by = c("governorate_id", "jmmi"))
-national_final_pct_change <- dplyr::full_join(national_all_pct_change,national_obs_pct_change, by = c("country_id", "jmmi"))
+governorate_final_pct_change <- dplyr::full_join(governorate_all_alone_pct_change,governorate_obs_pct_change, by = c("governorate_id", "jmmi")) %>% dplyr::select(-starts_with("district"))
+national_final_pct_change <- dplyr::full_join(national_all_pct_change,national_obs_pct_change, by = c("country_id", "jmmi")) %>% dplyr::select(-starts_with("district"), -starts_with("governorate"))
 
-#reorder the variables to fit with the google sheets templates
-#http://www.sthda.com/english/wiki/reordering-data-frame-columns-in-r
-#http://rprogramming.net/rename-columns-in-r/
+# Rename and reorder all variables to fit with google sheets templates
+meta_dis_raw <- c("jmmi_date","aor","governorate_name","governorate_id","district_name","district_id")
+meta_dis_final <- c("date","aor","government_name","government_ID","district_name","district_ID")
+col_price_raw <- c("calc_price_bleach","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_cooking_gas","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")
+col_price_final <- c("bleach","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","cooking_gas","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
 
-district_final<-district_final[,c("jmmi_date","aor","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(district_final)<-c("date","aor","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+rename.var <- function(df){
+  df <- df %>% 
+    setNames(gsub("calc_price_", "", colnames(.))) %>%
+    setnames(old = c(meta_dis_raw, "laundry", "sanitary", "exchange_rate_result", "n"),
+             new = c(meta_dis_final, "laundry_powder","sanitary_napkins", "exchange_rates", "num_obs"), skip_absent = T) 
+}
 
-governorate_final<-governorate_final[,c("jmmi_date","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(governorate_final)<-c("date","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+list_admin <- list(district_final, governorate_final, national_final, district_final_pct_change, governorate_final_pct_change, national_final_pct_change)
+names(list_admin) <- c("district_final", "governorate_final", "national_final", "district_final_pct_change", "governorate_final_pct_change", "national_final_pct_change")
+for (df_name in names(list_admin)){
+  assign(df_name, 
+         list_admin[[df_name]] %>% rename.var %>% dplyr::select(any_of(meta_dis_final), all_of(col_price_final)))
+  }
 
-national_final<-national_final[,c("jmmi_date","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(national_final)<-c("date","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+data_all <- data_all %>% rename.var %>%                                    # Only rename relevant columns for data all [keep all other columns]
+  dplyr::select(jmmi, any_of(meta_dis_final), any_of(col_price_final), everything(), -starts_with("country_"))
 
-final_list<-list("District"=district_final,"Governorate" = governorate_final, "National" = national_final)
+final_list <- list("District"=district_final,"Governorate" = governorate_final, "National" = national_final)
+final_list_pct_change <- list("District"=district_final_pct_change,"Governorate" = governorate_final_pct_change, "National" = national_final_pct_change)
 
 this_script_path<-(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd(this_script_path)
 
 write.xlsx(final_list, file = "./data/updated_interactive.xlsx")
-
-#reorder the variables to fit with the google sheets templates percent change
-#http://www.sthda.com/english/wiki/reordering-data-frame-columns-in-r
-#http://rprogramming.net/rename-columns-in-r/
-
-district_final_pct_change<-district_final_pct_change[,c("jmmi_date","aor","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(district_final_pct_change)<-c("date","aor","government_name","government_ID","district_name","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
-
-governorate_final_pct_change<-governorate_final_pct_change[,c("jmmi_date","governorate_name","governorate_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(governorate_final_pct_change)<-c("date","government_name","government_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
-
-national_final_pct_change<-national_final_pct_change[,c("jmmi_date","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")]
-colnames(national_final_pct_change)<-c("date","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
-
-final_list_pct_change<-list("District"=district_final_pct_change,"Governorate" = governorate_final_pct_change, "National" = national_final_pct_change)
-
-this_script_path<-(dirname(rstudioapi::getActiveDocumentContext()$path))
-setwd(this_script_path)
-
 write.xlsx(final_list_pct_change, file = "./data/updated_interactive_pct_change.xlsx")
 
 # undo after all clear

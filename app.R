@@ -37,6 +37,7 @@ library(data.table)
 library(openxlsx)
 library(grDevices)
 library(sass)
+library(scales)
 
 addLegend_decreasing <- function (map, position = c("topright", "bottomright", "bottomleft", 
                                                     "topleft"), pal, values, na.label = "NA", bins = 7, colors, 
@@ -154,11 +155,8 @@ round_df <- function(df, digits) {
 
 # Full database for data explorer at KII level 
 full_data <- read.csv("data/data_all.csv") %>%
-  dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra"), -ends_with("mrk_supply_issues"), -ends_with("other"), -ends_with("not_answer")) %>%
-  setnames(old=c("jmmi_date","governorate_name","governorate_id","district_name","district_id","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result"),
-           new=c("Date","Governorate","government_ID","District","district_ID","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates")) %>%
-  # dplyr::mutate(WASH_SMEB = as.numeric((soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15)) %>% round(.,0), # Commented as we don't want to compute SMEB at KII level [would enable coming up with different figures depending on coverage]
-  # Food_SMEB = as.numeric((wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt)) %>% round(.,0), .before="wheat_flour") %>%
+  dplyr::select(-matches("district_au|cash_feasibility|market_|_source|exchange_rate_market.|type_market|_other|infra|X"), -ends_with("mrk_supply_issues"), -ends_with("other"), -ends_with("not_answer")) %>%
+  dplyr::rename(Date=date, Governorate=government_name, District=district_name) %>%
   dplyr::mutate(Date=as.Date(as.yearmon(Date))) 
   
 # Full database for data explorer at district level + Plot tab
@@ -210,40 +208,32 @@ smeb_gov <- Admin2data %>% group_by(date, government_ID) %>% summarise_at(vars(m
 Admin1data <- Admin1data %>% full_join(., smeb_gov, by = c("date", "government_ID")) 
 smeb_nat <- Admin2data %>% group_by(date) %>% summarise_at(vars(matches("SMEB|lumpsum")), ~median(., na.rm=T))
 AdminNatData <- AdminNatData %>% full_join(., smeb_nat, by = c("date"))
-
-## Calculate SMEB for all datasets / discarded => would require aor defined at governorate and national level.
-# list_admin <- list(AdminNatData, Admin1data, Admin2data)
-# names(list_admin) <- c("AdminNatData", "Admin1data", "Admin2data")
-# for (df_name in names(list_admin)){assign(df_name, list_admin[[df_name]] %>% calculate.smeb)}
-
 max_date <- max(as.Date(as.yearmon(AdminNatData$date)))  
 
 #Wrangle Data into appropriate formats
 #Governorates
 Admin1table <- Admin1data %>% mutate_at(vars(-matches("date|aor|government")), ~ round(as.numeric(.)), 0) %>%
   mutate(date2 = as.Date(as.yearmon(date)))
-
 Admin1data_current <- Admin1table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
 currentD <- as.character(format(max(Admin1table$date2),"%B %Y"))                                # define current date for disply in dashboard
 
 #Districts
 Admin2table <- Admin2data %>% mutate_at(vars(-matches("date|aor|government|district")), ~ round(as.numeric(.)), 0) %>%
   mutate(date2 = as.Date(as.yearmon(date)))
-
 Admin2data_current <- Admin2table %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
 currentD <- as.character(format(max(Admin2table$date2),"%B %Y"))                                # define current date for disply in dashboard
 
 #National
 AdminNatTable <- AdminNatData %>% mutate_at(vars(-matches("date|aor")), ~ round(as.numeric(.)), 0) %>%
   mutate(date2 = as.Date(as.yearmon(date)))
-
 AdminNatData_current <- AdminNatTable %>% arrange(desc(date2)) %>% dplyr::filter(date2 == max_date) # subset only recent month dates to attach to shapefile
 currentD <- as.character(format(max(AdminNatTable$date2),"%B %Y"))                                  # define current date for display in dashboard
 
 # Price long data for Plot tab
-prices_long <- Admin2table %>%
+prices <- Admin2table %>%
   dplyr::select(date2, government_name:district_ID, everything(), -date, -government_ID, -district_ID, -aor) %>%
-  dplyr::rename(Date=date2, Governorate=government_name, District=district_name) %>%
+  dplyr::rename(Date=date2, Governorate=government_name, District=district_name) 
+prices_long <- prices %>%
   tidyr::pivot_longer(cols = 4:ncol(.)) %>%
   dplyr::rename(Item=name, Price=value)
 
@@ -251,14 +241,8 @@ prices_long <- prices_long %>% rbind(indicators_long)                           
 
 data <- Admin2table %>%                                                         ## for the data explorer tab
   dplyr::rename(Date=date, Governorate=government_name, District=district_name) 
-# %>% left_join(indicators, by = c("Date", "Governorate", "District"))
 
 ##-------------------------- SPATIAL DATA WRANGLE ----------------------
-# Admin1 <- st_read(dsn = "gis/yem_adm_govyem_cso_ochayemen_20191002_GDB.gdb", layer="yem_admbnda_adm1_govyem_cso") 
-# Admin2 <- st_read(dsn = "gis/yem_adm_govyem_cso_ochayemen_20191002_GDB.gdb", layer="yem_admbnda_adm2_govyem_cso") 
-# Rshp <- Admin2 %>% left_join(Admin2table, by=c("admin2pcod"="district_ID"))
-# Admin1 <- Admin1 %>% left_join(Admin1table, by=c("admin1pcod"="government_ID"))
-# DistsNumb <- sum(!is.na(Rshp %>% filter(date2==max(Rshp$date2, na.rm=T)) %>% dplyr::select(district_name)))
 
 # Read in shapefiles
 Admin1<- readOGR("./www", "YEM_adm1_Governorates")
@@ -309,11 +293,11 @@ colnames(YEMl@data) <- c("index","name","lon", "lat")
 
 ## For drop down selection in data explorer and plot tabs 
 
-smeb <- data.frame(SMEB = c(rep("SMEB Wash", 4), rep("SMEB Wash", 5)),                                  # define SMEB content table
-                   Category = c(rep("Non-Food Items", 3), "Water", rep("Food Items", 5)),
-                   Item = c("Soap", "Laundry powder", "Sanitary Napkins", "Cubic meter water",
-                            "Wheat flour", "Beans dry","Vegetable oil", "Sugar", "Salt"),
-                   Quantity = c("10.5 ", "20 Kg", "2 Boxes", "3.15 m^3", "7.5 Kg", "10 ", "8 ", "2.5 ", "1Kg"))
+# WASH_SMEB = (soap*10.5+laundry_powder*20+sanitary_napkins*2+as.numeric(cost_cubic_meter)*3.15) %>% as.numeric %>% round(.,0),
+# Food_SMEB = (wheat_flour*75+beans_dry*10+vegetable_oil*8+sugar*2.5+salt) %>% as.numeric %>% round(.,0),
+# NFI_Shelter_lumpsum = ifelse(aor == "North", 25000, ifelse(aor == "South", 28750, mean(c(25000,28750)))) %>% round(.,0),
+# Services_lumpsum = ifelse(aor == "North", 19000, ifelse(aor == "South", 21850, mean(c(19000,21850)))) %>% round(.,0),
+# SMEB = ifelse(!is.na(WASH_SMEB) & !is.na(Food_SMEB), WASH_SMEB + Food_SMEB + NFI_Shelter_lumpsum + Services_lumpsum %>% round(.,0), NA))
 
 cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",        # define color palette for plot lines
                "rgb(86,179,205)",  "rgb(246,158,97)",  "rgb(255,246,122)",
@@ -326,13 +310,13 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
 # To be updated whenever adding new item
 
 vars <- c(
-  "SMEB"="SMEB", "WASH SMEB"="WASH_SMEB", "Food SMEB"="Food_SMEB",
+  "SMEB"="SMEB", "SMEB Water"="WASH_SMEB", "SMEB Food"="Food_SMEB",
   "Parallel Exchange Rates"="exchange_rates",
   "Wheat Flour" = "wheat_flour", "Rice" = "rice", "Dry Beans" = "beans_dry", "Canned Beans" = "beans_can", "Lentils" = "lentil",
   "Vegetable Oil" = "vegetable_oil", "Sugar" = "sugar", "Salt" = "salt", "Potato" = "potato", "Onion" = "onion", 
   "Petrol" = "petrol", "Diesel" = "diesel",
   "Bottled Water"="bottled_water", "Treated Water"="treated_water",
-  "Soap"="soap", "Laundry Powder"="laundry_powder", "Sanitary Napkins"="sanitary_napkins",
+  "Soap"="soap", "Laundry Powder"="laundry_powder", "Sanitary Napkins"="sanitary_napkins", "Bleach"="bleach", "Cooking gas"="cooking_gas",
   "Water Trucking"= "cost_cubic_meter"
 )
 
@@ -353,23 +337,16 @@ names(vars_functionnality) <-
      )
 n_mkt_fun <- length(vars_functionnality)
 
-title.legend <- c("SMEB Cost", "WASH SMEB Cost", "Food SMEB Cost", "YER to 1 USD", "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)", 
-                  "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 L)", "Price (1 L)", "Price (0.75 L)", "Price (10 L)", 
-                  "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)",
+title.legend <- c("SMEB Cost", "WASH SMEB Cost", "Food SMEB Cost",
+                  "YER to 1 USD",
+                  "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)", 
+                  "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", 
+                  "Price (1 L)", "Price (1 L)",
+                  "Price (0.75 L)", "Price (10 L)", 
+                  "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)", "Price (1 L)", "Price (18.8kg)",
                   rep("	% of traders", n_mkt_fun))
-unit <- c(rep(" YER", 22),
+unit <- c(rep(" YER", 24),
           rep(" %", n_mkt_fun))
-
-## Setting custom maps color palettes for all items:
-pal1 <- colorRamp(c("#ADFFA5", "#A7383D", "#420A0D"), interpolate="linear")
-pal2 <- colorRamp(c("#C3FFFD", "#6EFBF6", "#009F99", "#00504D"), interpolate="linear")
-pal3 <- colorRamp(c("#C9C3F8", "#5D52AD", "#FAD962", "#AA9239"), interpolate="linear")
-pal4 <- colorRamp(c("#FFD7D9", "#FF535B", "#FB000D", "#830007", "#480004"), interpolate="linear")
-pal5 <- colorRamp(c("#C7C0FF", "#7A6AFF", "#1501B9", "#0A005D", "#050033"), interpolate="linear")
-
-palette <- c(pal1, pal1, "Greens", "Greens", pal2, "YlOrBr", pal2, "BuPu","RdPu", pal3, "Greens", pal3,
-             "Greens", "Greens", "YlOrBr", pal4, pal5, pal2, "RdPu", "Purples", "BuPu", pal3, 
-             rep("YlOrBr", n_mkt_fun))                                          # keep same palette for the market functionality indicators
 
 indicator_group <- c(rep("I. Indices", 3), 
                      "II. Currencies",
@@ -378,7 +355,19 @@ indicator_group <- c(rep("I. Indices", 3),
                      rep("V. Water", 2),
                      rep("VI. Non-food items", 3),
                      "V. Water",
+                     rep("VI. Non-food items", 2),
                      rep("VI. Other indicators", n_mkt_fun))
+
+## Setting custom maps color palettes for all items:
+pal_red <<- colorRamp(c("#FEF2F2", "#F7B7B7", "#EE5859", "#8F3535", "#471A1A"), interpolate="linear")
+pal_blue <<- colorRamp(c("#EEF3F8", "#B6CBDF", "#0067A9", "#004876", "#002844"), interpolate="linear")
+pal_green <<- colorRamp(c("#E7ECE6", "#C1CFBF", "#72966E", "#50694D", "#2D3B2C"), interpolate="linear")
+pal_yellow <<- colorRamp(c("#FFFDDD", "#FFF9A9", "#FFF67A", "#B2AC55", "#666231"), interpolate="linear")
+
+palette <- c(rep("pal_blue", length(indicator_group[indicator_group %in% c("I. Indices", "II. Currencies", "V. Water")])),
+             rep("pal_green", length(indicator_group[indicator_group %in% c("III. Food items")])),
+             rep("pal_red", length(indicator_group[indicator_group %in% c("IV. Fuels", "VI. Non-food items")])),
+             rep("pal_yellow", length(indicator_group[indicator_group %in% c("VI. Other indicators")]))) %>% lapply(get)      
 
 # Indicator_list => will determine drop down list + legend + palettes for maps
 Item <- names(c(vars, vars_functionnality))
@@ -405,6 +394,107 @@ dates_min  <- as.Date("2020-01-01")                                             
 dates_max  <- max(Admin2table$date2, na.rm = T)                                 # maximum date in data
 dates_max2 <- sort(unique(Admin2table$date2), decreasing=T)[2]                  # second-latest date
 
+dates_max_1y <- as.POSIXlt(dates_max)                                             # most recent month minus 1 year
+dates_max_1y$year <- dates_max_1y$year-1
+dates_max_1y <- as.Date(dates_max_1y)
+
+# Prepare tables for dashboard tab [under construction]
+prices_country <- prices %>%                                                      # aggregate price data at country level
+  dplyr::select(-Governorate, -District) %>%
+  dplyr::select(Date:num_obs, matches("SMEB"), -num_obs) %>%
+  dplyr::group_by(Date) %>%
+  dplyr::summarise_all(median, na.rm = TRUE)
+  
+prices_country_long <- tidyr::gather(prices_country, Item, Price, 2:ncol(prices_country))# transform country-level price data to long format
+
+prices_country_home <- prices_country %>%                                         # filter out SMEB data from country level price data
+  dplyr::filter(Date >= dates_min) %>%
+  dplyr::select(Date, SMEB, Food_SMEB, WASH_SMEB) %>%
+  tidyr::gather(Item, Price, SMEB:WASH_SMEB)                                        # transform SMEB data to long format so highcharter can read dataframe
+
+prices_changes <- prices_country_long %>%                                         # calculate bi-monthly/yearly changes of item prices
+  dplyr::filter(Date == dates_max | Date == dates_max2 | Date == dates_max_1y) %>%
+  dplyr::group_by(Item) %>%
+  dplyr::mutate(change  = scales::percent(Price/lag(Price, order_by=Date)-1, accuracy = 1),
+         change2 = scales::percent(Price/lag(Price, n = 2, order_by=Date)-1, accuracy = 1)) %>%
+  dplyr::mutate(change  = ifelse(!grepl('^\\-', change) & change != "0%" & !is.na(change), paste0("+", change, HTML(" &#9650;")), change),
+         change  = ifelse(grepl('^\\-', change), paste0(change, HTML(" &#9660;")), change),
+         change  = ifelse(change == "0%", paste0(change, HTML(" &#9654;")), change),
+         change2 = ifelse(!grepl('^\\-', change2) & change2 != "0%" & !is.na(change2), paste0("+", change2, HTML(" &#9650;")), change2),
+         change2 = ifelse(grepl('^\\-', change2), paste0(change2, HTML(" &#9660;")), change2),
+         change2 = ifelse(change2 == "0%", paste0(change2, HTML(" &#9654;")), change2)) %>%
+  dplyr::filter(Date == dates_max, !is.na(Price)) %>%
+  dplyr::select(-Date) %>%
+  dplyr::mutate(Price   = format(Price, big.mark=","),
+         change2 = tidyr::replace_na(change2, "NA")) %>%
+  dplyr::rename("Price (in YER)"    = Price,
+         "Bi-monthly change" = change,
+         "Yearly change"     = change2) %>%
+  left_join(indicator_list %>% dplyr::select(Item, Variable, Group), by=c("Item"="Variable")) %>% ungroup %>%
+  dplyr::select(-Item) %>% dplyr::rename(Item=Item.y) %>% dplyr::relocate(Item, .before=1)
+
+prices_changes_items <- prices_changes %>%
+  dplyr::filter(!(str_detect(Item, "^SMEB") | Item == "Parallel Exchange Rates"))
+
+prices_changes_meb <- prices_changes %>% 
+  dplyr::filter(str_detect(Item, "SMEB") | str_detect(Item, "Parallel Exchange Rates")) %>%
+  dplyr::arrange(Group, Item) %>% dplyr::mutate(Item=gsub("Parallel Exchange Rates","US dollar (1 USD)", Item))
+
+data_latest <- full_data %>%                                                                                   # latest dataset for download on dashboard page
+  dplyr::filter(Date == dates_max) %>%
+  dplyr::select(-aor)
+
+month_collected      <- paste0(format(dates_max, "%B"), " ",format(dates_max, "%Y"))                      # define overview of last round
+shops_covered        <- nrow(data_latest)
+districts_covered    <- n_distinct(data_latest$District, na.rm = FALSE)
+governorates_covered <- n_distinct(data_latest$Governorate, na.rm = FALSE)
+overview_round       <- data.frame(figure = c("Month", "Traders interviewed", "Districts covered", "Governorates covered"),
+                                   value  = c(month_collected, shops_covered, districts_covered, governorates_covered))
+
+table_round <- overview_round %>%                                                                         # style overview table
+  kbl(escape = F, format.args = list(big.mark = ","), align = "lr", col.names = NULL) %>%
+  column_spec(1, width = "12em") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), fixed_thead = T, full_width = T) %>%
+  row_spec(1,   extra_css = "font-size: 11.5px; border-top: 2px solid gainsboro") %>%
+  row_spec(2:nrow(overview_round), extra_css = "font-size: 11.5px;")
+
+table_changes <- prices_changes_items %>%                                                                # style item table
+  arrange(Group) %>% dplyr::select(-Group) %>%
+  kbl(escape = F, format.args = list(big.mark = ","), align = "lrrr") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), fixed_thead = T, full_width = F) %>%
+  column_spec(1, width = "14.5em") %>%
+  column_spec(3, color = ifelse(grepl('^\\+', prices_changes_items$'Bi-monthly change'), "red", ifelse(grepl('^\\-', prices_changes_items$'Bi-monthly change'), "green", "auto"))) %>%
+  column_spec(4, color = ifelse(grepl('^\\+', prices_changes_items$'Yearly change'), "red", ifelse(grepl('^\\-', prices_changes_items$'Yearly change'), "green", "auto"))) %>%
+  pack_rows("Food Items", 1, 10, label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
+  pack_rows("Fuels", 11, 12, label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
+  pack_rows("Water", 13, 15,  label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
+  pack_rows("Non-Food Items", 16, 20, label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
+  row_spec(0:nrow(prices_changes_items), extra_css = "font-size: 11px;")
+
+# Dashboard tables
+
+smeb <- data.frame(Category = c(rep("Water", 4), rep("Food Items", 5), "Non-food items & shelter", "Services"), # define SMEB content table
+                   Item = c("Soap", "Laundry powder", "Sanitary Napkins", "Cubic meter water",
+                            "Wheat flour", "Beans dry","Vegetable oil", "Sugar", "Salt", "NFI & shelter lumpsum", "Services lumpsum"),
+                   Quantity = c("10.5 ", "20 Kg", "2 Boxes", "3.15 m^3", "7.5 Kg", "10 ", "8 ", "2.5 ", "1Kg",
+                                "North: 25'000 YER\nSouth: 28'750 YER", "North: 19'000 YER \nSouth: 21'850 YER"))
+
+smeb_kbl <- smeb %>%                                                                                      # make a html (kable) object out of dataframe
+  kbl(escape = F) %>%
+  kable_styling(bootstrap_options = c("hover", "condensed", "striped"), fixed_thead = T, full_width = F) %>%
+  column_spec(1, width = "8em", bold = T, background = "white") %>%
+  column_spec(2, width = "10em") %>%
+  column_spec(3, width = "12em") %>%
+  collapse_rows(columns = 1, valign = "top") %>%
+  row_spec(0:nrow(smeb), extra_css = "font-size: 11px;")
+
+table_changes_meb <- prices_changes_meb %>% dplyr::select(-Group) %>%           # style key figures table
+  kbl(escape = F, format.args = list(big.mark = ","), align = "lrrr") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), fixed_thead = T, full_width = F) %>%
+  column_spec(1, width = "10em") %>%
+  column_spec(3, color = ifelse(grepl('^\\+', prices_changes_meb$'Bi-monthly change'), "red", ifelse(grepl('^\\-', prices_changes_meb$'Bi-monthly change'), "green", "auto"))) %>%
+  column_spec(4, color = ifelse(grepl('^\\+', prices_changes_meb$'Yearly change'), "red", ifelse(grepl('^\\-', prices_changes_meb$'Yearly change'), "green", "auto"))) %>%
+  row_spec(0:nrow(prices_changes_meb), extra_css = "font-size: 11px;")
 
 # UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 
@@ -413,12 +503,213 @@ ui <- function(){
   varsDate<- c("Months to Select" = "varDateSelect")
 
   #USER INTERFACE COMPONENTS
-  navbarPage(theme= shinytheme("journal"), collapsible = T,
-             title=strong(HTML("<span style='font-size:30px'>YEMEN: JOINT MARKET MONITORING INITIATIVE</span>")), # id="nav", #MAIN TITLE
+  navbarPage("REACH: Yemen Joint Market Monitoring Initiative (JMMI)",
+             theme= shinytheme("simplex"), collapsible = T,
+             # title=strong(HTML("<span style='font-size:20px'>YEMEN: Joint Market Monitoring Initiative</span>")), # id="nav", #MAIN TITLE
              windowTitle = "REACH: Yemen Joint Market Monitoring Initiative (JMMI)", #Title for browser tab window
 
+             #### * 6.1 Home ######################################################################
+             
+             tabPanel("Dashboard",                                                                      # define panel title
+                      icon = icon("tachometer-alt"),                                                    # select icon to be displayed in front of title
+                      
+                      div(class="dashboard",                                                            # set dashboard class from CSS file
+                          
+                          tags$head(includeCSS("styles_IRQ.css")),                                          # load CSS stylesheet
+                          
+                          leafletOutput("map_home", width = "100%", height = "100%"),                   # display background map
+                          
+                          absolutePanel(                                                                # define introduction box
+                            id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
+                            top = "50", left = "20", right = "auto", bottom = "auto", width = "400", height = 350,
+                            h4("Introduction"),
+                            p("The  Yemen  Joint  Market  Monitoring  Initiative  (JMMI) is an initative led by REACH in collaboration with the Water, Sanitation,
+                              and Hygiene (WASH) Cluster  and the Cash and Market Working Group (CMWG) to support humanitarian cash actors with the harmonization of price
+                              monitoring throughout Yemen. The basket of goods assessed includes eight non-food items (NFIs), including fuel, water and hygiene products,
+                              reflecting the programmatic areas of the WASH Cluster. The JMMI tracks all components of the WASH Survival Minimum Expenditure Basket
+                              (SMEB) since September 2018.",
+                              style="text-align:justify"),
+                            p(tags$i(h6("Display price data over time with the Price Plot, do spatial analysis with the Map, or
+                                         discover the data with the Data Explorer.",
+                                        style="color:grey;text-align:justify"))),
+                            br()
+                          ),
+                          
+                          absolutePanel(                                                                    # define chart box
+                            id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
+                            top = "420", left = "20", right = "auto", bottom = "auto", width = "400", height = "270",
+                            hchart(prices_country_home, "line",                                           # define chart
+                                   hcaes(x = Date, y = Price, group = Item)) %>%
+                              hc_yAxis(min = 0, title = list(text = "")) %>%
+                              hc_xAxis(title = "", labels = list(align = "center")) %>%
+                              hc_size(height = "253") %>%
+                              hc_title(
+                                text = "Overall Median SMEB Over Time (in YER)",
+                                margin = 10,
+                                align = "left",
+                                style = list(fontSize = 15)
+                              ) %>%
+                              hc_colors(cols) %>%
+                              hc_legend(style = list(fontSize = 8))
+                          ),
+                          
+                          absolutePanel(
+                            id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
+                            top = "50", left = "440", right = "auto", bottom = "auto", width = "340", height = "250",
+                            h4(paste0("Key Figures", " (", format(dates_max, "%b"), " ", format(dates_max, "%Y"), ")")),
+                            HTML(table_changes_meb), br()
+                          ),
+                          
+                          absolutePanel(
+                            id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
+                            top = "320", left = "440", right = "auto", bottom = "auto", width = "340", height = "185",
+                            h4("Latest Round"),
+                            HTML(table_round), br()
+                          ),
+                          
+                          absolutePanel(
+                            id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
+                            top = "525", left = "440", right = "auto", bottom = "auto", width = "340", height = "165",
+                            h4("Data Download"),
+                            p("Visit the Data Explorer or download the full dataset from the latest round here:"),
+                            downloadButton("downloadDataLatest", style = "font-size: 12px",
+                                           paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " dataset")),
+                            br(), br()
+                          ),
+                          
+                          absolutePanel(
+                            id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
+                            top = "50", left = "800", right = "auto", bottom = "auto",
+                            width = "400", height = "740",
+                            h4(paste0("Overall Median Item Prices", " (", format(dates_max, "%b"), " ", format(dates_max, "%Y"), ")")),
+                            HTML(table_changes), br()
+                          ),
+                          
+                          absolutePanel(id = "dropdown", top = 77, left = 675, width = 200, fixed=FALSE, draggable = FALSE, height = "auto",
+                                        dropdown(
+                                          h4("SMEB contents"),
+                                          column(
+                                            HTML(smeb_kbl),
+                                            width = 6),
+                                          column(p(h6("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item from the same market in each district.
+                                                       REACH calculates the WASH SMEB, which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (20 units), and Water Trucking (3.15 m3).")),
+                                                 p(h6("The calculation of the aggregated median price for districts and governorates is done following a stepped approach. Firstly, the median of all the price quotations related to the same market is taken. 
+                                                      Secondly, the median quotation from each market is aggregated to calculate the district median. Finally, the median quotation from each district is aggregated to calculate the governorate median.")),
+                                                 p(h6("More details on the SMEB can be found here:",
+                                                      tags$a(href="https://www.humanitarianresponse.info/sites/www.humanitarianresponse.info/files/documents/files/cmwg_yemen_smeb_gn_final_27102020.pdf",
+                                                             "SMEB Guidance Note"), ".")),
+                                                 width = 5),
+                                          width = "650px",
+                                          tooltip = tooltipOptions(title = "Click for more details on the SMEB."),
+                                          size = "xs",
+                                          up = FALSE,
+                                          style = "jelly", icon = icon("info"),
+                                          animate = animateOptions(
+                                            enter = "fadeInDown",
+                                            exit  = "fadeOutUp",
+                                            duration = 0.5)
+                                        )
+                          ),
+                          # display CWG & REACH logos on bottom left
+                          absolutePanel(id = "logo", class = "card", top = 750, left = 20, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.humanitarianresponse.info/sites/www.humanitarianresponse.info/files/documents/files/cmwg_yemen_smeb_gn_final_27102020.pdf', target = "_blank",
+                                               tags$img(src='CMWG Logo.jpg', height='40'))),
+
+                          absolutePanel(id = "logo", class = "card", top = 750, left = 140, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.reach-initiative.org', target = "_blank", tags$img(src='reach_logoInforming.jpg', height='40'))),
+                          
+                          # display partner logos on bottom right
+                          absolutePanel(id = "logo", class = "card", bottom = ver<-500, left = (anchor<-1230), fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.acted.org/en/countries/yemen/', target = "_blank", tags$img(src='0_acted.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver, left = anchor+85, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_almaroof.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver, left = anchor+150, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://adra.org/', target = "_blank", tags$img(src='0_adra.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver, left = anchor+205, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_thadamon.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver, left = anchor+280, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_b4d.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='http://bchr-ye.org/', target = "_blank", tags$img(src='0_bchr.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+60, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.facebook.com/cyf.org77/', target = "_blank", tags$img(src='0_cyf.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+100, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='http://www.drc.dk', target = "_blank", tags$img(src='0_drc.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+175, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.facebook.com/noqat.org/', target = "_blank", tags$img(src='0_gwq.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+210, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.iom.int/countries/yemen', target = "_blank", tags$img(src='0_iom.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+275, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.rescue.org/', target = "_blank", tags$img(src='0_IRC.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+310, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.mercycorps.org/where-we-work/yemen', target = "_blank", tags$img(src='0_mercy.jfif', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+65, left = anchor+340, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='http://nfdhr.org/', target = "_blank", tags$img(src='0_nfdhr.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_nfhd.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor+80, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.nrc.no/countries/middle-east/yemen/', target = "_blank", tags$img(src='0_nrc.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor+180, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_ocfd.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor+230, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.oxfam.org/en/tags/yemen', target = "_blank", tags$img(src='0_oxfam.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+130, left = anchor+325, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://rocye.org/', target = "_blank", tags$img(src= '0_roc.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://yemen.savethechildren.net/', target = "_blank", tags$img(src='0_sci.png', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor+120, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_steps.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor+160, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.facebook.com/TamdeenYouth/', target = "_blank", tags$img(src='0_soul.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor+295, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='http://yfca.org/en/', target = "_blank", tags$img(src='0_yfca.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+195, left = anchor+360, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_ysd.jpg', height='30'))),
+
+                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.solidarites.org/en/missions/yemen/', target = "_blank", tags$img(src='0_si.jpeg', height='30'))),
+                          
+                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor+50, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_tyf.png', height='30'))),
+                          
+                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor+160, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='', target = "_blank", tags$img(src='0_vision.png', height='30'))),
+                          
+                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor+235, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.zoa-international.com/files/yemen/', target = "_blank", tags$img(src='0_zoa.PNG', height='30'))),
+                          
+                          absolutePanel(id = "logo", class = "card", bottom = ver+260, left = anchor+310, fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.facebook.com/sama.alyemen.5', target = "_blank", tags$img(src='0_sama.jpg', height='30')))
+                          
+                          
+
+                      )                                                                                     # close dashboard class 
+             ),
+             
              ###..................................M A P. . P A G E ..........................................
-             tabPanel(strong("Map"), #TAB LABEL
+             tabPanel("Map", #TAB LABEL
                       icon= icon("map"), #TAB ICON
                       div(class="outer",
 
@@ -453,7 +744,7 @@ ui <- function(){
                                         # width = 500,
                                         width = "35%",
                                         height = "auto",
-
+                                        
                                         hr(),
                                         # h5("The Yemen Joint Market Monitoring Initiative (JMMI) is a harmonized price monitoriong initiative that focuses on informing
                                         # the Water, Sanitation, and Hygiene (WASH) Cluster and the Cash
@@ -530,7 +821,7 @@ ui <- function(){
 
              #### Plot ######################################################################
 
-             tabPanel("Price Plot",                                                                         # set panel title
+             tabPanel("Plot",                                                                         # set panel title
                       icon = icon("chart-line"),                                                            # select icon
                       chooseSliderSkin(skin = "Flat", color = NULL),                                        # set theme for sliders
                       sidebarLayout(
@@ -738,7 +1029,7 @@ ui <- function(){
 
              #### Data Explorer Page ######################################################################
 
-             tabPanel("Data Explorer", icon = icon("table"),
+             tabPanel("Explorer", icon = icon("table"),
 
                       sidebarLayout(
                         sidebarPanel(
@@ -814,7 +1105,7 @@ ui <- function(){
              ),
 
 
-             tabPanel(strong("SMEB Tracker"),
+             tabPanel("Tracker",
 
 
                       style=("{overflow-y:auto; }"),
@@ -850,7 +1141,7 @@ ui <- function(){
 
 
              ###..................................I N F O. . P A G E ..........................................
-             tabPanel(strong("Information"),
+             tabPanel("Information",
                       tags$head(tags$style("{ height:90vh; overflow-y: scroll; }")),
 
                       icon= icon("info"), #info-circle
@@ -918,61 +1209,62 @@ ui <- function(){
 
                         tags$div(id="cite4",
                                  a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org")))
-             ),
+             )
+             # ,
 
 
              #### Partners Page ######################################################################
 
-             tabPanel(strong("Partners"),
-
-                      #style=("{overflow-y:auto; }"),
-                      icon= icon("handshake"), #info-circle
-                      div(tags$head(
-                        # Include our custom CSS
-                        tags$style(".fa-check {color:#008000}"),
-                        tags$style(HTML(".sidebar {height:50vh; overflow-y:auto; }"))
-                      ),
-
-                      column(width=8,h3("Partners (Past and Present)")), #h1- h5 change the header level of the text
-                      column(width=7, h6(tags$i("Check marks indicate that the partner participated in the most recent month’s JMMI"))),
-
-                      #icon("check", "fa-2x")),
-                      #list of partners orgs
-                      column(width=12,align = "center", h5("Agency for Technical Cooperation and Development (ACTED)",icon("check", "fa-2x")),a(img(src='0_acted.png', height= "50px"), target="_blank", href="https://www.acted.org/en/countries/yemen/")),
-                      column(width=12,align = "center", h5("Al Maroof",icon("check", "fa-2x")),a(img(src='0_almaroof.jpg', height= "50px"), target="_blank")),
-                      column(width=12,align = "center", h5("Adventist Development and Relief Agency (ADRA)"), a(img(src='0_adra.png', height= "50px"), target = "_blank", href="https://adra.org/")),
-                      column(width=12,align = "center", h5("Al Thadamon Association"), img(src='0_thadamon.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("Brains for Development (B4D)"),img(src='0_b4d.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("Benevolence Coalition for Humanitarian Relief (BCHR)", icon("check", "fa-2x")), a(img(src='0_bchr.jpg', height= "50px"), target="_blank", href="http://bchr-ye.org/")),
-                      column(width=12,align = "center", h5("Creative Youth Forum (CYF)"), a(img(src='0_cyf.jpg', height= "50px"),target="_blank", href="https://www.facebook.com/cyf.org77/")),
-                      column(width=12,align = "center", h5("Danish Refugee Council (DRC)", icon("check", "fa-2x")), a(img(src='0_drc.png', height= "50px"), target="_blank", href="http://www.drc.dk")),
-                      column(width=12,align = "center", h5("Generations without Qat (GWQ),",icon("check", "fa-2x")), img(src='0_gwq.png', height= "50px")),
-                      #column(width=12,align = "center", h5("LLMPO"), img(src='0_cyf.png', height= "50px")),
-                      column(width=12,align = "center", h5("International Organization for Migration (IOM)",icon("check", "fa-2x")), img(src='0_iom.png', height= "50px"), target="_blank", href="https://www.iom.int/countries/yemen"),
-                      column(width=12,align = "center", h5("International Rescure Committee (IRC)", icon("check", "fa-2x")), a(img(src='0_IRC.jpg', height= "50px"), target="_blank", href="https://www.rescue.org/")),
-                      column(width=12,align = "center", h5("Mercy Corps (MC)"), img(src='0_mercy.jfif', height= "50px")),
-                      column(width=12,align = "center", h5("National Foundation for Development and Humanitarian Response (NFDHR)"), a(img(src='0_nfdhr.png', height= "50px"),target="_blank", href="http://nfdhr.org/")),
-                      column(width=12,align = "center", h5("National Forum Human Development (NFHD)"), img(src='0_nfhd.png', height= "50px")),
-                      column(width=12,align = "center", h5("Norweigan Refugee Council (NRC)", icon("check", "fa-2x")), img(src='0_nrc.png', height= "50px")),
-                      column(width=12,align = "center", h5("Old City Foundation for Development (OCFD)"), img(src='0_ocfd.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("OXFAM", icon("check", "fa-2x")), img(src='0_oxfam.png', height= "50px")),
-                      column(width=12,align = "center", h5("Rising Org. for Children Rights Development (ROC)"), a(img(src='0_roc.jpg', height= "50px"), target="_blank", href="https://rocye.org/")),
-                      column(width=12,align = "center", h5("Sama Al Yemen", icon("check", "fa-2x")), img(src='0_sama.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("Save the Children (SCI)",icon("check", "fa-2x")), img(src='0_sci.png', height= "50px")),
-                      column(width=12,align = "center", h5("STEPS", icon("check", "fa-2x")), img(src='0_steps.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("Sustainable Development Foundation (SDF)"), img(src='0_sdf.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("Solidarites International (SI)", icon("check", "fa-2x")), img(src='0_si.jpeg', height= "50px")),
-                      column(width=12,align = "center", h5("Soul Yemen"), img(src='0_soul.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("Tamdeen Youth Foundation (TYF)",icon("check", "fa-2x")), img(src='0_tyf.png', height= "50px")),
-                      column(width=12,align = "center", h5("Vision Hope"), img(src='0_vision.png', height= "50px")),
-                      column(width=12,align = "center", h5("Yemen Family Care Association (YFCA)"), img(src='0_yfca.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("Yemen Shoreline Development (YSD)"), img(src='0_ysd.jpg', height= "50px")),
-                      column(width=12,align = "center", h5("ZOA Yemen",icon("check", "fa-2x")), img(src='0_zoa.PNG', height= "50px")),
-                      p(),
-                      hr()
-
-
-                      ))
+             # tabPanel("Partners",
+             # 
+             #          #style=("{overflow-y:auto; }"),
+             #          icon= icon("handshake"), #info-circle
+             #          div(tags$head(
+             #            # Include our custom CSS
+             #            tags$style(".fa-check {color:#008000}"),
+             #            tags$style(HTML(".sidebar {height:50vh; overflow-y:auto; }"))
+             #          ),
+             # 
+             #          column(width=8,h3("Partners (Past and Present)")), #h1- h5 change the header level of the text
+             #          column(width=7, h6(tags$i("Check marks indicate that the partner participated in the most recent month’s JMMI"))),
+             # 
+             #          #icon("check", "fa-2x")),
+             #          #list of partners orgs
+             #          column(width=12,align = "center", h5("Agency for Technical Cooperation and Development (ACTED)",icon("check", "fa-2x")),a(img(src='0_acted.png', height= "50px"), target="_blank", href="https://www.acted.org/en/countries/yemen/")),
+             #          column(width=12,align = "center", h5("Al Maroof",icon("check", "fa-2x")),a(img(src='0_almaroof.jpg', height= "50px"), target="_blank")),
+             #          column(width=12,align = "center", h5("Adventist Development and Relief Agency (ADRA)"), a(img(src='0_adra.png', height= "50px"), target = "_blank", href="https://adra.org/")),
+             #          column(width=12,align = "center", h5("Al Thadamon Association"), img(src='0_thadamon.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("Brains for Development (B4D)"),img(src='0_b4d.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("Benevolence Coalition for Humanitarian Relief (BCHR)", icon("check", "fa-2x")), a(img(src='0_bchr.jpg', height= "50px"), target="_blank", href="http://bchr-ye.org/")),
+             #          column(width=12,align = "center", h5("Creative Youth Forum (CYF)"), a(img(src='0_cyf.jpg', height= "50px"),target="_blank", href="https://www.facebook.com/cyf.org77/")),
+             #          column(width=12,align = "center", h5("Danish Refugee Council (DRC)", icon("check", "fa-2x")), a(img(src='0_drc.png', height= "50px"), target="_blank", href="http://www.drc.dk")),
+             #          column(width=12,align = "center", h5("Generations without Qat (GWQ),",icon("check", "fa-2x")), img(src='0_gwq.png', height= "50px")),
+             #          #column(width=12,align = "center", h5("LLMPO"), img(src='0_cyf.png', height= "50px")),
+             #          column(width=12,align = "center", h5("International Organization for Migration (IOM)",icon("check", "fa-2x")), img(src='0_iom.png', height= "50px"), target="_blank", href="https://www.iom.int/countries/yemen"),
+             #          column(width=12,align = "center", h5("International Rescure Committee (IRC)", icon("check", "fa-2x")), a(img(src='0_IRC.jpg', height= "50px"), target="_blank", href="https://www.rescue.org/")),
+             #          column(width=12,align = "center", h5("Mercy Corps (MC)"), img(src='0_mercy.jfif', height= "50px")),
+             #          column(width=12,align = "center", h5("National Foundation for Development and Humanitarian Response (NFDHR)"), a(img(src='0_nfdhr.png', height= "50px"),target="_blank", href="http://nfdhr.org/")),
+             #          column(width=12,align = "center", h5("National Forum Human Development (NFHD)"), img(src='0_nfhd.png', height= "50px")),
+             #          column(width=12,align = "center", h5("Norweigan Refugee Council (NRC)", icon("check", "fa-2x")), img(src='0_nrc.png', height= "50px")),
+             #          column(width=12,align = "center", h5("Old City Foundation for Development (OCFD)"), img(src='0_ocfd.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("OXFAM", icon("check", "fa-2x")), img(src='0_oxfam.png', height= "50px")),
+             #          column(width=12,align = "center", h5("Rising Org. for Children Rights Development (ROC)"), a(img(src='0_roc.jpg', height= "50px"), target="_blank", href="https://rocye.org/")),
+             #          column(width=12,align = "center", h5("Sama Al Yemen", icon("check", "fa-2x")), img(src='0_sama.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("Save the Children (SCI)",icon("check", "fa-2x")), img(src='0_sci.png', height= "50px")),
+             #          column(width=12,align = "center", h5("STEPS", icon("check", "fa-2x")), img(src='0_steps.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("Sustainable Development Foundation (SDF)"), img(src='0_sdf.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("Solidarites International (SI)", icon("check", "fa-2x")), img(src='0_si.jpeg', height= "50px")),
+             #          column(width=12,align = "center", h5("Soul Yemen"), img(src='0_soul.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("Tamdeen Youth Foundation (TYF)",icon("check", "fa-2x")), img(src='0_tyf.png', height= "50px")),
+             #          column(width=12,align = "center", h5("Vision Hope"), img(src='0_vision.png', height= "50px")),
+             #          column(width=12,align = "center", h5("Yemen Family Care Association (YFCA)"), img(src='0_yfca.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("Yemen Shoreline Development (YSD)"), img(src='0_ysd.jpg', height= "50px")),
+             #          column(width=12,align = "center", h5("ZOA Yemen",icon("check", "fa-2x")), img(src='0_zoa.PNG', height= "50px")),
+             #          p(),
+             #          hr()
+             # 
+             # 
+             #          ))
 
   )
 }
@@ -980,11 +1272,31 @@ ui <- function(){
 # SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER
 
 server <- function(input, output,session) {
+  
+  #### Home ######################################################################
+  
+  output$map_home <- renderLeaflet({
+    map_home <- leaflet(options = leafletOptions(attributionControl=FALSE, zoomControl = FALSE, dragging = FALSE, minZoom = 1, maxZoom = 12)) %>%
+      setView(lng = 48.5164, lat = 17.5527, zoom = 6) %>%
+      addProviderTiles(providers$CartoDB.PositronNoLabels, group = "CartoDB",
+                       options = providerTileOptions(opacity = 0.8))
+  })
+  
+  output$downloadDataLatest <- downloadHandler(
+    filename = function() {
+      paste("YEM-JMPI-download-", format(dates_max, "%b"), "-", format(dates_max, "%Y"),".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(data_latest, file, row.names = FALSE)
+    }
+  )
+  
   #_________________________create map consisting of several layers and customization___________________
+  
   output$map1 <- renderLeaflet({                                                # initiate map
     leaflet(options = leafletOptions(minZoom = 4.5)) %>%
       addProviderTiles(providers$Esri.WorldGrayCanvas) %>%                      # Base map, can be changed
-      setView(50.911019, 15.889618, zoom = 6.5)
+      setView(48.5164,15.5527, zoom = 6.5)
     # setMaxBounds( lng1 = -66.9, lat1 = 37, lng2 = -66.1, lat2 = 37.8 )
     })
   
@@ -999,11 +1311,12 @@ server <- function(input, output,session) {
     dataM <- Rshp[,c(metacol, VARIA, metacol2)]                                 # subset VARIA column
     mypal <- colorNumeric(palette = indicator_list[indicator_list$Variable==VARIA, "Palette"][[1]],
                           domain = dataM@data[,6],
-                          na.color = "#D0CFCF",
-                          reverse = F)
+                          na.color = "#FBFBFB"
+                            # "#D0CFCF"
+                          ,reverse = F)
+
     pLa <- paste0(indicator_list[indicator_list$Variable==VARIA, "Item"],": ")
     pLa2 <- indicator_list[indicator_list$Variable==VARIA, "Item"]
-    en <- " "
     unitA <- indicator_list[indicator_list$Variable==VARIA, "Unit"]
     title_legend <- indicator_list[indicator_list$Variable==VARIA, "Legend"]
 
@@ -1028,84 +1341,57 @@ server <- function(input, output,session) {
       clearShapes() %>%                                                         # clear polygons, so new ones can be added
       clearControls()%>%                                                        # reset zoom etc
 
-      # addLabelOnlyMarkers(centroids,                                            # ADD governorate LABELS
-      #                     lat=centroids$lat,
-      #                     lng=centroids$lon,
-      #                     label=as.character(centroids$admin1name),
-      #                     labelOptions = leaflet::labelOptions(
-      #                       noHide = TRUE,
-      #                       interactive = FALSE,
-      #                       direction = "bottom",
-      #                       textOnly = TRUE,
-      #                       offset = c(0, -10),
-      #                       opacity = 0.6,
-      #                       style = list(
-      #                         "color"= "black",
-      #                         "font-size" = "13px",
-      #                         "font-family"= "Helvetica",
-      #                         "font-weight"= 600)
-      #                     )) %>%
+      addLabelOnlyMarkers(centroids,                                            # ADD governorate LABELS
+                          lat=centroids$lat,
+                          lng=centroids$lon,
+                          label=as.character(centroids$admin1name),
+                          labelOptions = leaflet::labelOptions(
+                            noHide = TRUE, interactive = FALSE, direction = "bottom", textOnly = TRUE, offset = c(0, -10), opacity = 0.6,
+                            style = list("color" = "#222224", "font-size" = "12px", "font-family"= "Helvetica", "font-weight"= 500)
+                          )) %>%
 
       # addLabelOnlyMarkers(YEMl, lat=YEMl$lat,                                   # Add Yemen label
       #                     lng=YEMl$lon,
       #                     label=as.character(YEMl$name),
       #                     labelOptions = leaflet::labelOptions(
-      #                       noHide = TRUE,
-      #                       interactive = FALSE,
-      #                       direction = "bottom",
-      #                       textOnly = TRUE,
-      #                       offset = c(0, -10),
-      #                       opacity = 1,
-      #                       style = list(
-      #                         "color"= "black",
-      #                         "font-size" = "24px",
-      #                         "font-family"= "Helvetica",
-      #                         "font-weight"= 800,
-      #                         "letter-spacing"= "3px")
+      #                       noHide = TRUE, interactive = FALSE, direction = "bottom", textOnly = TRUE, offset = c(0, -10), opacity = 1,
+      #                       style = list("color"= "black","font-size" = "24px", "font-family"= "Helvetica", "font-weight"= 800, "letter-spacing"= "3px")
       #                     )) %>%
 
-      addPolygons(data= dataM,                                                  # Add subsetted district shapefiles
-                  color = "grey",
-                  weight = 0.8,
-                  label= paste(dataM$admin2name," (", pLa, dataM@data[,6],en, ")"),
-                  opacity = 1.0,
-                  smoothFactor = 0.8,
-                  fill = TRUE,
-                  fillColor =  (~mypal((dataM@data[,6]))),#custom palette
-                  fillOpacity = .8,
+      addPolygons(data = dataM,                                                  # Add subsetted district shapefiles
+                  color = "#58585A", weight = 0.25,
+                  label = paste0(dataM$admin2name," (", pLa, dataM@data[,6], indicator_list[indicator_list$Item==input$variable1, "Unit"],")"),
+                  # paste0(dataM$admin2name," (", pLa, dataM@data[,6]," )"),
+                  opacity = 0.5, smoothFactor = 0.8, fill = TRUE, fillOpacity = 0.8,
+                  fillColor =  (~mypal((dataM@data[,6]))), # custom palette
                   layerId = ~admin2pcod,
                   highlightOptions = highlightOptions(color = "black", weight = 2, bringToFront = FALSE, sendToBack = FALSE),
                   popup = paste0(dataM$admin2name, "<br>",'<h7 style="color:black;">', pLa, "<b>"," ", dataM@data[,6],unitA, "</b>", '</h7>'),
       ) %>%
-      addPolygons(data= old_dist_alt_sp,                                        # Clipped data file of previous districts (make sure it is below your main district on or it will not be seen)
-                  color = "red",
-                  weight = 1.5,
+      addPolygons(data = old_dist_alt_sp,                                        # Clipped data file of previous districts (make sure it is below your main district on or it will not be seen)
+                  color = "#EE5859", weight = 0.35,
                   label = paste0(old_dist_alt_sp$admin2name,":previous ",pLa2," data present"), #added a different label that pops up
-                  opacity = .40,
-                  smoothFactor = 0.5,
-                  fill = TRUE,
+                  opacity = 1, smoothFactor = 0, fill = TRUE, fillOpacity = .8,
                   fillColor = ~pal_alt(old_dist_alt_sp@data[,"alt_dist"]),      # Custom palette as stated before
-                  fillOpacity = .8,
                   layerId = ~admin2pcod,
                   highlightOptions = highlightOptions(color = "black", weight = 2, bringToFront = FALSE, sendToBack = FALSE),
       )%>%
-      addPolylines(data = Admin1,                                               # Add governorate lines for reference
-                   weight= 3.25,
-                   stroke = T,
-                   color = "black",
-                   fill=FALSE,
-                   fillOpacity = 0.1,
-                   opacity = 0.1 )
+      addPolylines(data = Admin1, weight= 0.5, stroke = T,                      # Add governorate lines for reference
+                   color = "#58585A", fill=FALSE, fillOpacity = 0.1, opacity = 1)
 
     map1 %>% clearControls()
 
     # Needed to make a custom label because i hate R shiny https://stackoverflow.com/questions/52812238/custom-legend-with-r-leaflet-circles-and-squares-in-same-plot-legends
-    colors<-c("white", "#D3D3D3", "#D3D3D3")
-    labels<-c("Districts with previous data", "Governorate borders", "District borders")
-    sizes<-c("20", "20", "20")
-    shapes<-c("square", "line", "line")
-    borders<-c("red", "#2B2B2B" , "#646464")
-
+    # colors<-c("white" ,"#D3D3D3", "#D3D3D3")
+    # labels<-c("Districts with previous data", "Governorate borders", "District borders")
+    # sizes<-c("20", "20", "20")
+    # shapes<-c("square", "line", "line")
+    # borders<-c("red", "#2B2B2B", "#646464")
+    colors<-c("white")
+    labels<-c("Districts with previous data")
+    sizes<-c("20")
+    shapes<-c("square")
+    borders<-c("#EE5859")
     addLegendCustom <- function(map, colors, labels, sizes, shapes, borders, opacity = 0.5){
 
       make_shapes <- function(colors, sizes, borders, shapes) {
@@ -1125,18 +1411,16 @@ server <- function(input, output,session) {
       return(addLegend(map1,"topleft", colors = legend_colors, labels = legend_labels, opacity = 0.5))
     }
 
-    map1 %>% addControl(c(""), position = "topleft" ) %>% addControl(c(""), position = "topleft" ) # add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
+    map1 %>% addControl(c(""), position = "topleft" ) 
+    # %>% addControl(c(""), position = "topleft" ) # add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
     map1 %>% addScaleBar("topleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T)) # add scale bar
     map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)            # add new legend
 
     # add legend for var
     map1 %>%
       addLegend_decreasing("topleft", pal = mypal, values =  dataM@data[,6], # update legend to reflect changes in selected district/variable shown
-                           labFormat=labelFormat(suffix=unitA),
-                           title = title_legend,
-                           opacity = 5,
-                           decreasing = T)
-
+                           labFormat=labelFormat(suffix=unitA), title = title_legend, opacity = 5, decreasing = T) 
+    
   })                                                                            # end of MAP
 
   #_________________________create reactive objects for use in the chart___________________
@@ -1279,14 +1563,15 @@ server <- function(input, output,session) {
 
   output$text3 <- renderText({                                                  # LARGE TEXT ABOVE CHART
     if (indicator_list[indicator_list$Item==input$variable1, "Group"] %in% c("VI. Other indicators")) {
-      paste(chartNAME(), " ", "Average Over Time")
-    } else {paste(chartNAME(), " ", "Medians Over Time")}
-    
-    # paste(chartNAME(), " ", "Medians Over Time")
+      paste(chartNAME(), " ", "Average over time")
+    } else {paste(chartNAME(), " ", "Medians over time")}
     })
 
   output$text_DT<-renderText({
-    paste0(chartNAME(),", Median Monthly Costs, and Number of Markets Assessed")
+    if (indicator_list[indicator_list$Item==input$variable1, "Group"] %in% c("VI. Other indicators")) {
+      paste(chartNAME(), " ", "Average % of surveyed vendors, and number of markets assessed")
+    } else {paste0(chartNAME(), "Median monthly costs, and number of markets assessed")}
+    # paste0(chartNAME(),", Median Monthly Costs, and Number of Markets Assessed")
     })
 
   output$text4 <- renderUI({
