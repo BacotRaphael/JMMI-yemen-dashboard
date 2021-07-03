@@ -39,6 +39,9 @@ library(grDevices)
 library(sass)
 library(scales)
 
+library(httr)  
+set_config(use_proxy(url="10.3.100.207",port=8080))                             # to solve "error in curl::curl_fetch_memory
+
 addLegend_decreasing <- function (map, position = c("topright", "bottomright", "bottomleft", 
                                                     "topleft"), pal, values, na.label = "NA", bins = 7, colors, 
                                   opacity = 0.5, labels = NULL, labFormat = labelFormat(), 
@@ -353,9 +356,8 @@ indicator_group <- c(rep("I. Indices", 3),
                      rep("III. Food items", 10),
                      rep("IV. Fuels", 2),
                      rep("V. Water", 2),
-                     rep("VI. Non-food items", 3),
+                     rep("VI. Non-food items", 5),
                      "V. Water",
-                     rep("VI. Non-food items", 2),
                      rep("VI. Other indicators", n_mkt_fun))
 
 ## Setting custom maps color palettes for all items:
@@ -462,14 +464,15 @@ table_changes <- prices_changes_items %>%                                       
   arrange(Group) %>% dplyr::select(-Group) %>%
   kbl(escape = F, format.args = list(big.mark = ","), align = "lrrr") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), fixed_thead = T, full_width = F) %>%
-  column_spec(1, width = "14.5em") %>%
+  column_spec(1, width = "12em") %>%
   column_spec(3, color = ifelse(grepl('^\\+', prices_changes_items$'Bi-monthly change'), "red", ifelse(grepl('^\\-', prices_changes_items$'Bi-monthly change'), "green", "auto"))) %>%
   column_spec(4, color = ifelse(grepl('^\\+', prices_changes_items$'Yearly change'), "red", ifelse(grepl('^\\-', prices_changes_items$'Yearly change'), "green", "auto"))) %>%
   pack_rows("Food Items", 1, 10, label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
-  pack_rows("Fuels", 11, 12, label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
-  pack_rows("Water", 13, 15,  label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
+  pack_rows("Fuels & Water", 11, 15, label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
+  # pack_rows("Water", 13, 15,  label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
   pack_rows("Non-Food Items", 16, 20, label_row_css = "background-color: #f5f5f5; font-size: 10.5px; border-top: 2px solid gainsboro") %>%
-  row_spec(0:nrow(prices_changes_items), extra_css = "font-size: 11px;")
+  row_spec(0:nrow(prices_changes_items), extra_css = "font-size: 11px;") %>%
+  scroll_box(height="90%")
 
 # Dashboard tables
 
@@ -491,23 +494,22 @@ smeb_kbl <- smeb %>%                                                            
 table_changes_meb <- prices_changes_meb %>% dplyr::select(-Group) %>%           # style key figures table
   kbl(escape = F, format.args = list(big.mark = ","), align = "lrrr") %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"), fixed_thead = T, full_width = F) %>%
-  column_spec(1, width = "10em") %>%
+  column_spec(1, width = "9em") %>%
   column_spec(3, color = ifelse(grepl('^\\+', prices_changes_meb$'Bi-monthly change'), "red", ifelse(grepl('^\\-', prices_changes_meb$'Bi-monthly change'), "green", "auto"))) %>%
   column_spec(4, color = ifelse(grepl('^\\+', prices_changes_meb$'Yearly change'), "red", ifelse(grepl('^\\-', prices_changes_meb$'Yearly change'), "green", "auto"))) %>%
   row_spec(0:nrow(prices_changes_meb), extra_css = "font-size: 11px;")
+  
+varsDate <- c("Months to Select" = "varDateSelect")
 
 # UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 
-ui <- function(){
-
-  varsDate<- c("Months to Select" = "varDateSelect")
-
-  #USER INTERFACE COMPONENTS
+ui <- tagList(
+  
+  shiny::includeCSS("navbar.css"), # custom CSS to kill the white space on top of the navbar
   navbarPage("REACH: Yemen Joint Market Monitoring Initiative (JMMI)",
-             theme= shinytheme("simplex"), collapsible = T,
-             # title=strong(HTML("<span style='font-size:20px'>YEMEN: Joint Market Monitoring Initiative</span>")), # id="nav", #MAIN TITLE
-             windowTitle = "REACH: Yemen Joint Market Monitoring Initiative (JMMI)", #Title for browser tab window
-
+             # theme = shinytheme("simplex"),
+             collapsible = T, windowTitle = "REACH: Yemen Joint Market Monitoring Initiative (JMMI)", # Title for browser tab window
+             
              #### * 6.1 Home ######################################################################
              
              tabPanel("Dashboard",                                                                      # define panel title
@@ -515,13 +517,13 @@ ui <- function(){
                       
                       div(class="dashboard",                                                            # set dashboard class from CSS file
                           
-                          tags$head(includeCSS("styles_IRQ.css")),                                          # load CSS stylesheet
+                          tags$head(shiny::includeCSS("styles_IRQ.css")),                               # load CSS stylesheet
                           
                           leafletOutput("map_home", width = "100%", height = "100%"),                   # display background map
                           
                           absolutePanel(                                                                # define introduction box
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = "50", left = "20", right = "auto", bottom = "auto", width = "400", height = 350,
+                            top = as.character(ver.anchor<-45), left = "15", right = "auto", bottom = "auto", width = "400", height = 350,
                             h4("Introduction"),
                             p("The  Yemen  Joint  Market  Monitoring  Initiative  (JMMI) is an initative led by REACH in collaboration with the Water, Sanitation,
                               and Hygiene (WASH) Cluster  and the Cash and Market Working Group (CMWG) to support humanitarian cash actors with the harmonization of price
@@ -537,7 +539,7 @@ ui <- function(){
                           
                           absolutePanel(                                                                    # define chart box
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = "420", left = "20", right = "auto", bottom = "auto", width = "400", height = "270",
+                            top = as.character(ver.anchor+365), left = "15", right = "auto", bottom = "auto", width = "400", height = "270",
                             hchart(prices_country_home, "line",                                           # define chart
                                    hcaes(x = Date, y = Price, group = Item)) %>%
                               hc_yAxis(min = 0, title = list(text = "")) %>%
@@ -555,21 +557,21 @@ ui <- function(){
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = "50", left = "440", right = "auto", bottom = "auto", width = "340", height = "250",
+                            top = as.character(ver.anchor), left = "430", right = "auto", bottom = "auto", width = "340", height = "250",
                             h4(paste0("Key Figures", " (", format(dates_max, "%b"), " ", format(dates_max, "%Y"), ")")),
                             HTML(table_changes_meb), br()
                           ),
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = "320", left = "440", right = "auto", bottom = "auto", width = "340", height = "185",
+                            top = as.character(ver.anchor+265), left = "430", right = "auto", bottom = "auto", width = "340", height = "185",
                             h4("Latest Round"),
                             HTML(table_round), br()
                           ),
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = "525", left = "440", right = "auto", bottom = "auto", width = "340", height = "165",
+                            top = as.character(ver.anchor+465), left = "430", right = "auto", bottom = "auto", width = "340", height = "170",
                             h4("Data Download"),
                             p("Visit the Data Explorer or download the full dataset from the latest round here:"),
                             downloadButton("downloadDataLatest", style = "font-size: 12px",
@@ -579,13 +581,13 @@ ui <- function(){
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = "50", left = "800", right = "auto", bottom = "auto",
-                            width = "400", height = "755",
+                            top = as.character(ver.anchor), left = "785", right = "auto", bottom = "auto",
+                            width = "400", height = "635",
                             h4(paste0("Overall Median Item Prices", " (", format(dates_max, "%b"), " ", format(dates_max, "%Y"), ")")),
                             HTML(table_changes), br()
                           ),
                           
-                          absolutePanel(id = "dropdown", top = 77, left = 675, width = 200, fixed=FALSE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "dropdown", top = as.character(ver.anchor+30), left = 675, width = 200, fixed=FALSE, draggable = FALSE, height = "auto",
                                         dropdown(
                                           h4("SMEB contents"),
                                           column(
@@ -611,83 +613,93 @@ ui <- function(){
                                         )
                           ),
                           # display CWG & REACH logos on bottom left
-                          absolutePanel(id = "logo", class = "card", top = 750, left = 20, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", 
+                                        # top = as.character(ver.anchor+710), 
+                                        bottom = 20,
+                                        # left = 20,
+                                        left = 1200,
+                                        fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.humanitarianresponse.info/sites/www.humanitarianresponse.info/files/documents/files/cmwg_yemen_smeb_gn_final_27102020.pdf', target = "_blank",
                                                tags$img(src='CMWG Logo.jpg', height='40'))),
-
-                          absolutePanel(id = "logo", class = "card", top = 750, left = 140, fixed=TRUE, draggable = FALSE, height = "auto",
+                          
+                          absolutePanel(id = "logo", class = "card",
+                                        # top = as.character(ver.anchor+710),
+                                        bottom = 20,
+                                        # left = 140,
+                                        left = 1320,
+                                        fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.reach-initiative.org', target = "_blank", tags$img(src='reach_logoInforming.jpg', height='40'))),
                           
                           # display partner logos on bottom right
-                          absolutePanel(id = "logo", class = "card", top = ver<-100, left = (anchor<-1230), fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver<-100, left = (anchor<-1215), fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.acted.org/en/countries/yemen/', target = "_blank", tags$img(src='0_acted.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver, left = anchor+85, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_almaroof.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver, left = anchor+150, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://adra.org/', target = "_blank", tags$img(src='0_adra.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver, left = anchor+205, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_thadamon.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver, left = anchor+280, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_b4d.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='http://bchr-ye.org/', target = "_blank", tags$img(src='0_bchr.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+60, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.facebook.com/cyf.org77/', target = "_blank", tags$img(src='0_cyf.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+100, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='http://www.drc.dk', target = "_blank", tags$img(src='0_drc.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+175, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.facebook.com/noqat.org/', target = "_blank", tags$img(src='0_gwq.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+210, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.iom.int/countries/yemen', target = "_blank", tags$img(src='0_iom.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+275, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.rescue.org/', target = "_blank", tags$img(src='0_IRC.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+310, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.mercycorps.org/where-we-work/yemen', target = "_blank", tags$img(src='0_mercy.jfif', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+65, left = anchor+340, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='http://nfdhr.org/', target = "_blank", tags$img(src='0_nfdhr.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_nfhd.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor+80, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.nrc.no/countries/middle-east/yemen/', target = "_blank", tags$img(src='0_nrc.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor+180, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_ocfd.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor+230, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.oxfam.org/en/tags/yemen', target = "_blank", tags$img(src='0_oxfam.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+130, left = anchor+325, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://rocye.org/', target = "_blank", tags$img(src= '0_roc.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://yemen.savethechildren.net/', target = "_blank", tags$img(src='0_sci.png', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor+120, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_steps.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor+160, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.facebook.com/TamdeenYouth/', target = "_blank", tags$img(src='0_soul.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor+295, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='http://yfca.org/en/', target = "_blank", tags$img(src='0_yfca.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+195, left = anchor+360, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='', target = "_blank", tags$img(src='0_ysd.jpg', height='30'))),
-
+                          
                           absolutePanel(id = "logo", class = "card", top = ver+260, left = anchor, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.solidarites.org/en/missions/yemen/', target = "_blank", tags$img(src='0_si.jpeg', height='30'))),
                           
@@ -704,7 +716,7 @@ ui <- function(){
                                         tags$a(href='https://www.facebook.com/sama.alyemen.5', target = "_blank", tags$img(src='0_sama.jpg', height='30')))
                           
                           
-
+                          
                       )                                                                                     # close dashboard class 
              ),
              
@@ -712,7 +724,7 @@ ui <- function(){
              tabPanel("Map", #TAB LABEL
                       icon= icon("map"), #TAB ICON
                       div(class="outer",
-
+                          
                           tags$head(
                             # Include our custom CSS
                             shiny::includeCSS("AdminLTE.css"),
@@ -720,7 +732,7 @@ ui <- function(){
                             shiny::includeCSS(path = "shinydashboard.css"),
                             br()#added
                           ),
-
+                          
                           #LEAFLET MAP
                           # If not using custom CSS, set height of leafletOutput to a number instead of percent
                           leaflet::leafletOutput("map1", width="100%", height="100%"), # BRING IN LEAFLET MAP, object created in server.R
@@ -728,7 +740,7 @@ ui <- function(){
 
                                             #controls {height:90vh; overflow-y: auto; }
                                               ")),                              # remove map zoom controls
-
+                          
                           tags$head(tags$style(
                             type = "text/css",
                             "#controlPanel {background-color: rgba(255,255,255,0.8);}",
@@ -737,7 +749,7 @@ ui <- function(){
                          }"
                           )),
                           # https://stackoverflow.com/questions/37861234/adjust-the-height-of-infobox-in-shiny-dashboard
-
+                          
                           #SIDE PANEL
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 60, left = "auto", right = 20, bottom = 1,
@@ -750,19 +762,19 @@ ui <- function(){
                                         # the Water, Sanitation, and Hygiene (WASH) Cluster and the Cash
                                         # and Market Working Group (CMWG) to support humanitarian activies throughout Yemen.
                                         # The JMMI provides an indicative estimation of the prices of WASH and fuel items across districts in Yemen."),
-
+                                        
                                         h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
                                                   tags$strong(DistsNumb), "districts in ", tags$strong(paste0(currentD,"."))),
                                            ("The districts outlined in red indicate that data for the selected item was collected in that district in previous months.")),
-
+                                        
                                         h5("Further details regarding the JMMI methodology and the Survival Minimum Expenditure Basket (SMEB) calculation can be found on the information tab.
                                          For additional information on supply chains and market-related concerns, please visit the  ",a("REACH Resource Center", target="_blank",    href="https://www.reachresourcecentre.info/country/yemen/cycle/754/#cycle-754"), " to access the monthly situation overviews."),
-
+                                        
                                         hr(),
-
+                                        
                                         #h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
                                         #   tags$strong(DistsNumb), "districts in ", tags$strong(currentD))),
-
+                                        
                                         # selectInput("variable1", h4("Select Variable Below"), vars, selected = "Food_SMEB"), #linked text
                                         
                                         pickerInput("variable1",
@@ -774,23 +786,23 @@ ui <- function(){
                                                     selected = "SMEB",
                                                     multiple = FALSE,
                                                     choicesOpt = list(content = indicator_list$Item2)
-                                                    ),
-
+                                        ),
+                                        
                                         h5(textOutput("text3")), #extra small text which had to be customized as an html output in server.r (same with text1 and text 2)
-
+                                        
                                         #HIGH CHART
                                         highchartOutput("hcontainer", height= 300,
                                                         width = "100%"
                                                         #, width = 450
-                                                        ),
-
+                                        ),
+                                        
                                         #new data table
                                         hr(),
                                         selectInput(inputId= "varDateSelect", label = h4("Select Month of Data Collection"), choices=NULL, selected = (("varDateSelect"))), # linked date stuff
                                         h5("Please select a district to enable month selection"),
                                         h5(textOutput("text_DT")),
                                         DT::dataTableOutput("out_table_obs",height = "auto", width = "100%"),
-
+                                        
                                         #####Attempt to add an info box
                                         hr(),
                                         h5("Exchange Rate for selected month"),
@@ -798,45 +810,45 @@ ui <- function(){
                                         fluidRow(valueBoxOutput("info_exchange", width = 12)),
                                         hr(),
                                         #hr(),
-
+                                        
                                         h6(htmlOutput("text1")),
                                         h6(htmlOutput("text2")),
                                         h6(htmlOutput("text4")),
                                         column(width=12, align="center", div(id="cite2", "Funded by: "), img(src='DFID UKAID.png', width= "90px"),img(src='OCHA@3x.png', width= "90px"),
                                                img(src='USAID.png', width= "105px")) #donor logos
-
-
+                                        
+                                        
                           ),
-
-
+                          
+                          
                           tags$div(id="cite",
                                    a(img(src='reach_logoInforming.jpg', height= "40px"), target="_blank", href="http://www.reach-initiative.org"),
                                    img(src='CMWG Logo.jpg', height= "40px", style='padding:1px;border:thin solid black;'),
                                    img(src='washlogo_grey-300DPI.png', height= "40px"))
-
+                          
                           # tags$div(id="cite",
                           #          a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org"))
                       )
              ),
-
+             
              #### Plot ######################################################################
-
+             
              tabPanel("Plot",                                                                         # set panel title
                       icon = icon("chart-line"),                                                            # select icon
                       chooseSliderSkin(skin = "Flat", color = NULL),                                        # set theme for sliders
                       sidebarLayout(
-
+                        
                         sidebarPanel(
-
+                          
                           tags$i(h6("Note: Reported prices are indicative only.", style="color:#045a8d")),
-
+                          
                           pickerInput("plot_aggregation",
                                       label = "Aggregation level:",
                                       choices = c("District", "Governorate", "Country"),
                                       selected = "Country",
                                       multiple = FALSE
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'Country'",
                                            radioGroupButtons("plot_type",
                                                              label = "Plot type:",
@@ -845,9 +857,9 @@ ui <- function(){
                                                              justified = TRUE
                                            )
                           ),
-
+                          
                           hr(),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'District'",
                                            radioGroupButtons("plot_by_district_item",
                                                              label = "Group by:",
@@ -856,7 +868,7 @@ ui <- function(){
                                                              justified = TRUE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'Governorate'",
                                            radioGroupButtons("plot_by_governorate_item",
                                                              label = "Group by:",
@@ -865,7 +877,7 @@ ui <- function(){
                                                              justified = TRUE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'District' & input.plot_by_district_item == 'District'",
                                            pickerInput("select_bydistrict_district",
                                                        label = "District(s):",
@@ -875,7 +887,7 @@ ui <- function(){
                                                        multiple = TRUE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'District' & input.plot_by_district_item == 'District'",
                                            pickerInput("select_bydistrict_item",
                                                        label = "Item:",
@@ -885,7 +897,7 @@ ui <- function(){
                                                        multiple = FALSE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Governorate'",
                                            pickerInput("select_bygovernorate_governorate",
                                                        label = "Governorate(s):",
@@ -895,7 +907,7 @@ ui <- function(){
                                                        multiple = TRUE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Governorate'",
                                            pickerInput("select_bygovernorate_item",
                                                        label = "Item:",
@@ -905,7 +917,7 @@ ui <- function(){
                                                        multiple = FALSE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'Country' | (input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Item') | (input.plot_aggregation == 'District' & input.plot_by_district_item == 'Item')",
                                            pickerInput("select_byitem_item",
                                                        label = "Item(s):",
@@ -915,7 +927,7 @@ ui <- function(){
                                                        multiple = TRUE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'District' & input.plot_by_district_item == 'Item'",
                                            pickerInput("select_byitem_district",
                                                        label = "District:",
@@ -925,7 +937,7 @@ ui <- function(){
                                                        multiple = FALSE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Item'",
                                            pickerInput("select_byitem_governorate",
                                                        label = "Governorate:",
@@ -935,9 +947,9 @@ ui <- function(){
                                                        multiple = FALSE
                                            )
                           ),
-
+                          
                           hr(),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation != 'Country' | (input.plot_aggregation == 'Country' & input.plot_type == 'Line Graph')",
                                            sliderTextInput("select_date",                                                # set date slider
                                                            "Months:",
@@ -946,7 +958,7 @@ ui <- function(){
                                                            selected = c(dates_min, dates_max)
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'Country' & input.plot_type == 'Boxplot'",
                                            sliderTextInput("select_date_boxplot",                                        # set date slider
                                                            "Month:",
@@ -955,7 +967,7 @@ ui <- function(){
                                                            selected = dates_max
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation != 'Country' | (input.plot_aggregation == 'Country' & input.plot_type == 'Line Graph')",
                                            prettySwitch(
                                              inputId = "select_index",
@@ -964,7 +976,7 @@ ui <- function(){
                                              fill = TRUE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.select_index == true & (input.plot_aggregation != 'Country' | (input.plot_aggregation == 'Country' & input.plot_type == 'Line Graph'))",
                                            sliderTextInput("select_date_index",
                                                            "Reference Month:",
@@ -973,11 +985,11 @@ ui <- function(){
                                                            selected = dates_max
                                            ),
                           ),
-
+                          
                           h6("Select aggregation level, item(s), location(s) and month from drop-down menues to update plot.
                                     Displayed values are median prices - retail prices are first aggregated on site level and then
                                     on district level (and then on governorate/country level)."),
-
+                          
                           absolutePanel(id = "dropdown", bottom = 20, left = 20, width = 200,                            # define blue info button
                                         fixed=TRUE, draggable = FALSE, height = "auto",
                                         dropdown(
@@ -991,7 +1003,7 @@ ui <- function(){
                                                  p(h6("The SMEB reported on this website only includes the food and water components, including a lump sump amount for
                                                                services(electricity, communication and transportation) and non-food items.")),
                                                  # p(h6("The composition of the SMEB was revised twice: 1) In the September
-                                                               # 2018 round and onwards, the current water component replaced the fuel component. 2) Since January 2020,
+                                                 # 2018 round and onwards, the current water component replaced the fuel component. 2) Since January 2020,
                                                  #               the SMEB furthermore includes modified food and NFI components.")),
                                                  # p(h6("More details on the SMEB can be found here:",
                                                  #      tags$a(href="https://www.humanitarianresponse.info/en/operations/iraq/document/survival-minimum-expenditure-basket-technical-guidance-note-october-2019",
@@ -1009,38 +1021,38 @@ ui <- function(){
                                             duration = 0.5)
                                         )
                           ),
-
+                          
                           width = 3,                                                                    # set bootstrap width of sidebar (out of 12)
                         ),                                                                                # close sidebar panel
-
+                        
                         mainPanel(
                           br(),
                           tags$i(textOutput("plot_text"), style = "color: red"),                        # display error message displayed if there is no data available
                           highchartOutput("graph", width = "100%", height = "600px"),                   # display large chart
                           width = 8,                                                                    # set width of main panel (out of 12, as per bootstrap logic)
-
+                          
                           conditionalPanel(condition = "input.plot_aggregation == 'Country' & input.plot_type == 'Boxplot'",
                                            tags$i(h6("The boxplots are built with district medians and illustrate the variation of prices across the country.", style="color:#045a8d; text-align:center"))
                           )
                         )
                       )
              ),
-
-
+             
+             
              #### Data Explorer Page ######################################################################
-
+             
              tabPanel("Explorer", icon = icon("table"),
-
+                      
                       sidebarLayout(
                         sidebarPanel(
-
+                          
                           radioGroupButtons("table_aggregation",
                                             label = "Aggregation level:",
                                             choices = c("District", "Key Informant"),
                                             selected = "District",
                                             justified = TRUE
                           ),
-
+                          
                           conditionalPanel(condition = "input.table_aggregation != 'District'",
                                            # condition = TRUE,
                                            tags$i(h6("Note: Only district-level data can be displayed in the table on the right.
@@ -1048,9 +1060,9 @@ ui <- function(){
                                                             parameters and clicking on the download button below.",
                                                      style="color:red")),
                           ),
-
+                          
                           hr(),
-
+                          
                           conditionalPanel(condition = "input.table_aggregation == 'District'",
                                            # condition = TRUE,
                                            pickerInput("table_show_vars",
@@ -1061,7 +1073,7 @@ ui <- function(){
                                                        multiple = TRUE
                                            )
                           ),
-
+                          
                           conditionalPanel(condition = "input.table_aggregation == 'Key Informant'",
                                            pickerInput("table_show_vars_ki",
                                                        label = "Indicators:",
@@ -1071,7 +1083,7 @@ ui <- function(){
                                                        multiple = TRUE
                                            )
                           ),
-
+                          
                           pickerInput("table_district",
                                       label = "Districts:",
                                       choices = lapply(split(plot_location_list$District, plot_location_list$Governorate), as.list),
@@ -1079,7 +1091,7 @@ ui <- function(){
                                       selected = plot_location_list$District,
                                       multiple = TRUE
                           ),
-
+                          
                           sliderTextInput("table_date_select",
                                           "Months:",
                                           force_edges = TRUE,
@@ -1087,27 +1099,27 @@ ui <- function(){
                                           selected = c("2021-03-01", "2021-03-01")
                                           # ,selected = c(dates_min, dates_max)
                           ),
-
+                          
                           hr(),
-
+                          
                           actionButton("table_reset", "Reset filters"),
-
+                          
                           downloadButton("downloadData", "Download as CSV"),
-
+                          
                           width = 3
                         ),
-
+                        
                         mainPanel(
                           DT::dataTableOutput("table", width = "100%", height = "100%")
                           # ,width = 9
                         )
                       )
              ),
-
-
+             
+             
              tabPanel("Tracker",
-
-
+                      
+                      
                       style=("{overflow-y:auto; }"),
                       icon= icon("bar-chart"), #info-circle
                       div(tags$head(
@@ -1133,28 +1145,28 @@ ui <- function(){
                           DT::dataTableOutput("table_other")
                         )
                       )
-
-
-
-
+                      
+                      
+                      
+                      
                       )),
-
-
+             
+             
              ###..................................I N F O. . P A G E ..........................................
              tabPanel("Information",
                       tags$head(tags$style("{ height:90vh; overflow-y: scroll; }")),
-
+                      
                       icon= icon("info"), #info-circle
                       div(#class="outer",
-
+                        
                         tags$head(
                           # Include our custom CSS
                           shiny::includeCSS("styles.css"),
                           style=" { height:90vh; overflow-y: scroll; }
                                               "),
-
+                        
                         column(width=8,h3("Overview")), #h1- h5 change the header level of the text
-
+                        
                         column(width=7,h5("The  Yemen  Joint  Market  Monitoring  Initiative  (JMMI) is an
                                           initative led by REACH in collaboration with the Water, Sanitation,
                                           and Hygiene (WASH) Cluster  and the Cash and Market Working Group (CMWG)
@@ -1164,9 +1176,9 @@ ui <- function(){
                                           reflecting the programmatic areas of the WASH Cluster. The JMMI
                                           tracks all components of the WASH Survival Minimum Expenditure Basket
                                           (SMEB) since September 2018.")),
-
+                        
                         column(width=8,h3("Methodology")), #h1- h5 change the header level of the text
-
+                        
                         column(width=7,h5("Data was collected through interviews with vendor Key Informants
                                           (KIs), selected by partner organizations from markets of various sizes
                                           in both urban and rural areas. To be assessed by the JMMI, markets
@@ -1178,9 +1190,9 @@ ui <- function(){
                                           location when it is too small, to provide a minimum of three price
                                           quotations per assessed item.", tags$i(tags$strong("Findings are indicative for the assessed
                                           locations and timeframe in which the data was collected.")))),
-
+                        
                         column(width=8,h3("SMEB Calculation")), #h1- h5 change the header level of the text
-
+                        
                         column(width=7,h5("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item from the same market in each district.
                                           REACH calculates the WASH SMEB,
                                           which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (20 units) ,and Water Trucking (3.15 m3).",
@@ -1188,10 +1200,10 @@ ui <- function(){
                                           p("The calculation of the aggregated median price for districts and governorates is done following a stepped approach.
                                           Firstly, the median of all the price quotations related to the same market is taken. Secondly, the median quotation from each market is aggregated to calculate the district median.
                                           Finally, the median quotation from each district is aggregated to calculate the governorate median. "))),
-
-
+                        
+                        
                         column(width=8,h3("About REACH")), #h1- h5 change the header level of the text
-
+                        
                         column(width=7,h5("REACH is a joint initiative that facilitates the development of
                                           information tools and products that enhance the capacity of aid actors
                                           to make evidence-based decisions in emergency, recovery and development
@@ -1201,20 +1213,20 @@ ui <- function(){
                                           inter-agency aid coordination  mechanisms. For more information, please
                                           visit our",a("REACH Website", target="_blank",    href="https://www.reach-initiative.org"), "or contact us directly
                                           at yemen@reach-initiative.org.")),
-
+                        
                         hr(),
                         p(),
                         p(),
                         hr(),
-
+                        
                         tags$div(id="cite4",
                                  a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org")))
              )
              # ,
-
-
+             
+             
              #### Partners Page ######################################################################
-
+             
              # tabPanel("Partners",
              # 
              #          #style=("{overflow-y:auto; }"),
@@ -1265,9 +1277,9 @@ ui <- function(){
              # 
              # 
              #          ))
-
+             
   )
-}
+)
 
 # SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER
 
@@ -1411,8 +1423,9 @@ server <- function(input, output,session) {
       return(addLegend(map1,"topleft", colors = legend_colors, labels = legend_labels, opacity = 0.5))
     }
 
-    map1 %>% addControl(c(""), position = "topleft" ) 
-    # %>% addControl(c(""), position = "topleft" ) # add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
+    map1 %>%
+      addControl(c(""), position = "topleft" )
+      # %>% addControl(c(""), position = "topleft" ) # add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
     map1 %>% addScaleBar("topleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T)) # add scale bar
     map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)            # add new legend
 
