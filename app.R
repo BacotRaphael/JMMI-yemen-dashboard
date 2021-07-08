@@ -582,6 +582,7 @@ ui <- tagList(
                             downloadButton("downloadDataLatest", style = "font-size: 12px",
                                            paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " dataset           ")),
                             br(),
+                            br(),
                             downloadButton("downloadFactsheet", style = "font-size: 12px",
                                            paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " situation overview")),
                             br()
@@ -1350,8 +1351,8 @@ server <- function(input, output, session) {
     metacol2 <- c("num_obs", "date2")
     
     # VARIA = "Food_SMEB"
-    dataM_all <- Rshp[,c(metacol, VARIA, metacol2, "date")]                     # subset VARIA column
-    dataM <- dataM_all[dataM_all@data$date2==date_map_selected,]                         # filter for the selected date 
+    dataM_all <- Rshp[,c(metacol, VARIA, metacol2)]                             # subset VARIA column
+    dataM <- dataM_all[dataM_all@data$date2==date_map_selected,]                # filter for the selected date 
     
     all.na <- sum(is.na(dataM@data[,VARIA]))==nrow(dataM@data)                  # flag when all values are NAs for this date
     pal_domain <- if (all.na){c(0,1)} else {dataM@data[,VARIA]}                 # adapt the palette domain
@@ -1377,11 +1378,11 @@ server <- function(input, output, session) {
     Admin2data_out <- Admin2data_out[!duplicated(Admin2data_out$district_name),]
     Rshp@data <- Rshp@data %>% dplyr::mutate(alt_dist = (admin2pcod %in% Admin2data_out$district_ID)*1 %>% dplyr::na_if(0))
 
-    old_dist <- Rshp[Rshp@data$date2==date_map_selected,c(metacol, "alt_dist")]          # final dataset that needs to be pulled from the right Rshp (this is after you dynamically pull out the right data depending on what is selected)
-    old_dist_alt <- sf::st_as_sf(old_dist) %>%                                  # convert the data list (shapefile list) to a more useable list we can filter from while holding the coordinates https://gis.stackexchange.com/questions/156268/r-filter-shapefiles-with-dplyr/156290
-      dplyr::filter(alt_dist == 1)                                              # actually do a filter on the stuff you want (this corresponds to the Rshp 31 and the 1 and NA we did before), basically its a janky way to do a clip on the fly from a GIS perspective
-    old_dist_alt_sp <- sf::as_Spatial(old_dist_alt)                             # convert back to a spatial datalist https://gis.stackexchange.com/questions/239118/r-convert-sf-object-back-to-spatialpolygonsdataframe
-    pal_alt <- colorBin(palette="#E5E5E5", domain=old_dist_alt_sp@data[,"alt_dist"]) # create a new color pallete for the new over lay
+    # old_dist <- Rshp[Rshp@data$date2==date_map_selected,c(metacol, "alt_dist")]          # final dataset that needs to be pulled from the right Rshp (this is after you dynamically pull out the right data depending on what is selected)
+    # old_dist_alt <- sf::st_as_sf(old_dist) %>%                                  # convert the data list (shapefile list) to a more useable list we can filter from while holding the coordinates https://gis.stackexchange.com/questions/156268/r-filter-shapefiles-with-dplyr/156290
+    #   dplyr::filter(alt_dist == 1)                                              # actually do a filter on the stuff you want (this corresponds to the Rshp 31 and the 1 and NA we did before), basically its a janky way to do a clip on the fly from a GIS perspective
+    # old_dist_alt_sp <- sf::as_Spatial(old_dist_alt)                             # convert back to a spatial datalist https://gis.stackexchange.com/questions/239118/r-convert-sf-object-back-to-spatialpolygonsdataframe
+    # pal_alt <- colorBin(palette="#E5E5E5", domain=old_dist_alt_sp@data[,"alt_dist"]) # create a new color pallete for the new over lay
 
     map1 <- leafletProxy("map1") %>%                                            # leaflet map proxy updates created map to reflect obeserved changes
       clearShapes() %>%                                                         # clear polygons, so new ones can be added
@@ -1396,14 +1397,6 @@ server <- function(input, output, session) {
                             style = list("color" = "#222224", "font-size" = "12px", "font-family"= "Helvetica", "font-weight"= 500)
                           )) %>%
 
-      # addLabelOnlyMarkers(YEMl, lat=YEMl$lat,                                   # Add Yemen label
-      #                     lng=YEMl$lon,
-      #                     label=as.character(YEMl$name),
-      #                     labelOptions = leaflet::labelOptions(
-      #                       noHide = TRUE, interactive = FALSE, direction = "bottom", textOnly = TRUE, offset = c(0, -10), opacity = 1,
-      #                       style = list("color"= "black","font-size" = "24px", "font-family"= "Helvetica", "font-weight"= 800, "letter-spacing"= "3px")
-      #                     )) %>%
-
       addPolygons(data = dataM,                                                  # Add subsetted district shapefiles
                   color = "#58585A", weight = 0.25,
                   label = lapply(paste0(dataM$admin2name," (", pLa, dataM@data[,6], indicator_list[indicator_list$Item==input$variable1, "Unit"],")<p>Number of market assessed: ", dataM@data[,"num_obs"]), htmltools::HTML),
@@ -1414,14 +1407,14 @@ server <- function(input, output, session) {
                   highlightOptions = highlightOptions(color = "black", weight = 2, bringToFront = FALSE, sendToBack = FALSE),
                   popup = paste0(dataM$admin2name, "<br>",'<h7 style="color:black;">', pLa, "<b>"," ", dataM@data[,6],unitA, "</b>", '</h7>'),
       ) %>%
-      addPolygons(data = old_dist_alt_sp,                                        # Clipped data file of previous districts (make sure it is below your main district on or it will not be seen)
-                  color = "#EE5859", weight = 0.35,
-                  label = paste0(old_dist_alt_sp$admin2name,":previous ",pLa2," data present"), #added a different label that pops up
-                  opacity = 1, smoothFactor = 0, fill = TRUE, fillOpacity = .8,
-                  fillColor = ~pal_alt(old_dist_alt_sp@data[,"alt_dist"]),      # Custom palette as stated before
-                  layerId = ~admin2pcod,
-                  highlightOptions = highlightOptions(color = "black", weight = 2, bringToFront = FALSE, sendToBack = FALSE),
-      )%>%
+      # addPolygons(data = old_dist_alt_sp,                                        # Clipped data file of previous districts (make sure it is below your main district on or it will not be seen)
+      #             color = "#EE5859", weight = 0.35,
+      #             label = paste0(old_dist_alt_sp$admin2name,":previous ",pLa2," data present"), #added a different label that pops up
+      #             opacity = 1, smoothFactor = 0, fill = TRUE, fillOpacity = .8,
+      #             fillColor = ~pal_alt(old_dist_alt_sp@data[,"alt_dist"]),      # Custom palette as stated before
+      #             layerId = ~admin2pcod,
+      #             highlightOptions = highlightOptions(color = "black", weight = 2, bringToFront = FALSE, sendToBack = FALSE),
+      # )%>%
       addPolylines(data = Admin1, weight= 0.5, stroke = T,                      # Add governorate lines for reference
                    color = "#58585A", fill=FALSE, fillOpacity = 0.1, opacity = 1)
 
@@ -1461,7 +1454,7 @@ server <- function(input, output, session) {
       addControl(c(""), position = "topleft" )
       # %>% addControl(c(""), position = "topleft" ) # add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
     map1 %>% addScaleBar("topleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T)) # add scale bar
-    map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)            # add new legend
+    # map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)            # add new legend
 
     # add legend for var
     map1 %>% 
