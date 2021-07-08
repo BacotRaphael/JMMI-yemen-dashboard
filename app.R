@@ -38,7 +38,7 @@ library(openxlsx)
 library(grDevices)
 library(sass)
 library(scales)
-
+library(htmltools)
 library(httr)  
 set_config(use_proxy(url="10.3.100.207",port=8080))                             # to solve "error in curl::curl_fetch_memory
 
@@ -258,7 +258,9 @@ Admin2@data<- Admin2@data %>% dplyr::mutate_if(is.factor, as.character)
 
 ##-------------------------- COMBINE TABULAR & SPATIAL DATA----------------------
 #Merge data from Google Sheet with Rayon shp file
-Rshp <- merge(x=Admin2,y=Admin2data_current, by.x="admin2pcod", by.y= "district_ID")
+# Rshp <- merge(x=Admin2,y=Admin2data_current, by.x="admin2pcod", by.y= "district_ID")
+Rshp <- sp::merge(x=Admin2,y=Admin2table, by.x="admin2pcod", by.y= "district_ID", duplicateGeoms = TRUE,no.dups = FALSE )
+Rshp <- Rshp[!is.na(Rshp$date2),]                                               # filter out NAs date
 DistsNumb <- sum(!is.na(Rshp@data$district_name))                               # get number of districts covered...
 
 Rshp <- st_simplify(st_as_sf(Rshp), dTolerance = 0.5)
@@ -507,13 +509,16 @@ ui <- tagList(
   
   shiny::includeCSS("navbar.css"), # custom CSS to kill the white space on top of the navbar
   navbarPage("REACH: Yemen Joint Market Monitoring Initiative (JMMI)",
-             # theme = shinytheme("simplex"),
+             
              collapsible = T, windowTitle = "REACH: Yemen Joint Market Monitoring Initiative (JMMI)", # Title for browser tab window
              
              #### * 6.1 Home ######################################################################
              
              tabPanel("Dashboard",                                                                      # define panel title
                       icon = icon("tachometer-alt"),                                                    # select icon to be displayed in front of title
+                      
+                      tags$head(shiny::includeCSS("styles.css"),                                        # Include our custom CSS
+                                style =" {overflow-y: scroll; }"),
                       
                       div(class="dashboard",                                                            # set dashboard class from CSS file
                           
@@ -573,10 +578,13 @@ ui <- tagList(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
                             top = as.character(ver.anchor+465), left = "430", right = "auto", bottom = "auto", width = "340", height = "170",
                             h4("Data Download"),
-                            p("Visit the Data Explorer or download the full dataset from the latest round here:"),
+                            # p("Visit the Data Explorer or download the full dataset from the latest round here:"),
                             downloadButton("downloadDataLatest", style = "font-size: 12px",
-                                           paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " dataset")),
-                            br(), br()
+                                           paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " dataset           ")),
+                            br(),
+                            downloadButton("downloadFactsheet", style = "font-size: 12px",
+                                           paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " situation overview")),
+                            br()
                           ),
                           
                           absolutePanel(
@@ -614,24 +622,24 @@ ui <- tagList(
                           ),
                           # display CWG & REACH logos on bottom left
                           absolutePanel(id = "logo", class = "card", 
-                                        # top = as.character(ver.anchor+710), 
-                                        bottom = 20,
-                                        # left = 20,
-                                        left = 1200,
+                                        top = as.character(v.anch<-750),
+                                        # bottom = 20,
+                                        left = 20,
+                                        # left = 1200,
                                         fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.humanitarianresponse.info/sites/www.humanitarianresponse.info/files/documents/files/cmwg_yemen_smeb_gn_final_27102020.pdf', target = "_blank",
                                                tags$img(src='CMWG Logo.jpg', height='40'))),
                           
                           absolutePanel(id = "logo", class = "card",
-                                        # top = as.character(ver.anchor+710),
+                                        top = as.character(v.anch),
                                         bottom = 20,
-                                        # left = 140,
-                                        left = 1320,
+                                        left = 140,
+                                        # left = 1320,
                                         fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.reach-initiative.org', target = "_blank", tags$img(src='reach_logoInforming.jpg', height='40'))),
                           
                           # display partner logos on bottom right
-                          absolutePanel(id = "logo", class = "card", top = ver<-100, left = (anchor<-1215), fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", top = ver<-v.anch+70, left = (anchor<-20), fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.acted.org/en/countries/yemen/', target = "_blank", tags$img(src='0_acted.png', height='30'))),
                           
                           absolutePanel(id = "logo", class = "card", top = ver, left = anchor+85, fixed=TRUE, draggable = FALSE, height = "auto",
@@ -786,6 +794,14 @@ ui <- tagList(
                                                     selected = "SMEB",
                                                     multiple = FALSE,
                                                     choicesOpt = list(content = indicator_list$Item2)
+                                        ),
+                                        
+                                        sliderTextInput("date_map",                                        # set date slider
+                                                        "Month:",
+                                                        force_edges = TRUE,
+                                                        choices = dates,
+                                                        selected = dates_max,
+                                                        animate = TRUE
                                         ),
                                         
                                         h5(textOutput("text3")), #extra small text which had to be customized as an html output in server.r (same with text1 and text 2)
@@ -1283,7 +1299,7 @@ ui <- tagList(
 
 # SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER SERVER
 
-server <- function(input, output,session) {
+server <- function(input, output, session) {
   
   #### Home ######################################################################
   
@@ -1303,6 +1319,17 @@ server <- function(input, output,session) {
     }
   )
   
+  output$downloadFactsheet <- downloadHandler(
+    filename = function() {
+      paste("YEM-JMPI-download-situation-overview-", format(dates_max, "%Y"),".pdf", sep = "")
+    },
+    content = function(file) {
+      a(paste0(dates_max," Situation overview"), target="_blank",    href="https://reliefweb.int/sites/reliefweb.int/files/resources/REACH_YEM_JMMI_Situation-Overview_March-2021.pdf")
+    }
+  )
+  
+  
+  
   #_________________________create map consisting of several layers and customization___________________
   
   output$map1 <- renderLeaflet({                                                # initiate map
@@ -1314,15 +1341,22 @@ server <- function(input, output,session) {
   
   # "observe" inputs to define variables for map colors, titles, legends and subset district data
   observe({
-    # VARIA <- input$variable1
+    date_map_selected <- input$date_map
+    # date_map_selected <- dates[33]
+    VARIA <- input$variable1
+    # VARIA <- "SMEB"
     VARIA <- indicator_list[indicator_list$Item==input$variable1, "Variable"]
     metacol <- c("admin2pcod", "admin1name", "admin1pcod", "admin2name", "admin2refn")
     metacol2 <- c("num_obs", "date2")
     
     # VARIA = "Food_SMEB"
-    dataM <- Rshp[,c(metacol, VARIA, metacol2)]                                 # subset VARIA column
+    dataM_all <- Rshp[,c(metacol, VARIA, metacol2, "date")]                     # subset VARIA column
+    dataM <- dataM_all[dataM_all@data$date2==date_map_selected,]                         # filter for the selected date 
+    
+    all.na <- sum(is.na(dataM@data[,VARIA]))==nrow(dataM@data)                  # flag when all values are NAs for this date
+    pal_domain <- if (all.na){c(0,1)} else {dataM@data[,VARIA]}                 # adapt the palette domain
     mypal <- colorNumeric(palette = indicator_list[indicator_list$Variable==VARIA, "Palette"][[1]],
-                          domain = dataM@data[,6],
+                          domain = pal_domain,
                           na.color = "#FBFBFB"
                             # "#D0CFCF"
                           ,reverse = F)
@@ -1332,7 +1366,7 @@ server <- function(input, output,session) {
     unitA <- indicator_list[indicator_list$Variable==VARIA, "Unit"]
     title_legend <- indicator_list[indicator_list$Variable==VARIA, "Legend"]
 
-    dataM_NAs <- dataM@data %>% dplyr::filter(is.na(date2))%>% pull(admin2pcod) # Have a vector of all of the districts that currently have no data for the current month
+    dataM_NAs <- dataM@data %>% dplyr::filter(is.na(!!sym(VARIA))) %>% pull(admin2pcod) # Have a vector of all of the districts that currently have no data for the current month
     call_name <- colnames(dataM@data[6])                                        # get name of variable selected
 
     # Need to subset out for with districts have had values in the past that arent in this current month, get that as a list
@@ -1343,7 +1377,7 @@ server <- function(input, output,session) {
     Admin2data_out <- Admin2data_out[!duplicated(Admin2data_out$district_name),]
     Rshp@data <- Rshp@data %>% dplyr::mutate(alt_dist = (admin2pcod %in% Admin2data_out$district_ID)*1 %>% dplyr::na_if(0))
 
-    old_dist <- Rshp[,c(metacol, "alt_dist")]                                   # final dataset that needs to be pulled from the right Rshp (this is after you dynamically pull out the right data depending on what is selected)
+    old_dist <- Rshp[Rshp@data$date2==date_map_selected,c(metacol, "alt_dist")]          # final dataset that needs to be pulled from the right Rshp (this is after you dynamically pull out the right data depending on what is selected)
     old_dist_alt <- sf::st_as_sf(old_dist) %>%                                  # convert the data list (shapefile list) to a more useable list we can filter from while holding the coordinates https://gis.stackexchange.com/questions/156268/r-filter-shapefiles-with-dplyr/156290
       dplyr::filter(alt_dist == 1)                                              # actually do a filter on the stuff you want (this corresponds to the Rshp 31 and the 1 and NA we did before), basically its a janky way to do a clip on the fly from a GIS perspective
     old_dist_alt_sp <- sf::as_Spatial(old_dist_alt)                             # convert back to a spatial datalist https://gis.stackexchange.com/questions/239118/r-convert-sf-object-back-to-spatialpolygonsdataframe
@@ -1372,7 +1406,7 @@ server <- function(input, output,session) {
 
       addPolygons(data = dataM,                                                  # Add subsetted district shapefiles
                   color = "#58585A", weight = 0.25,
-                  label = paste0(dataM$admin2name," (", pLa, dataM@data[,6], indicator_list[indicator_list$Item==input$variable1, "Unit"],")"),
+                  label = lapply(paste0(dataM$admin2name," (", pLa, dataM@data[,6], indicator_list[indicator_list$Item==input$variable1, "Unit"],")<p>Number of market assessed: ", dataM@data[,"num_obs"]), htmltools::HTML),
                   # paste0(dataM$admin2name," (", pLa, dataM@data[,6]," )"),
                   opacity = 0.5, smoothFactor = 0.8, fill = TRUE, fillOpacity = 0.8,
                   fillColor =  (~mypal((dataM@data[,6]))), # custom palette
@@ -1430,9 +1464,10 @@ server <- function(input, output,session) {
     map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)            # add new legend
 
     # add legend for var
-    map1 %>%
-      addLegend_decreasing("topleft", pal = mypal, values =  dataM@data[,6], # update legend to reflect changes in selected district/variable shown
-                           labFormat=labelFormat(suffix=unitA), title = title_legend, opacity = 5, decreasing = T) 
+    map1 %>% 
+      execute_if(!all.na, 
+                 addLegend_decreasing("topleft", pal = mypal, values =  dataM@data[,6], # update legend to reflect changes in selected district/variable shown
+                                      labFormat=labelFormat(suffix=unitA), title = title_legend, opacity = 5, decreasing = T))
     
   })                                                                            # end of MAP
 
@@ -1787,7 +1822,7 @@ server <- function(input, output,session) {
     input$table_reset
     updatePickerInput(session, "table_district", selected = plot_location_list$District)
     updatePickerInput(session, "table_show_vars", selected = c("date2", "Governorate", "District", "Food_SMEB", "WASH_SMEB"))
-    updatePickerInput(session, "table_show_vars_ki", selected = names(full_data),)
+    updatePickerInput(session, "table_show_vars_ki", selected = names(full_data)[names(full_data) != "AOR"],) # unselect aor column from full data download
     updateSliderTextInput(session, "table_date_select", selected = c(dates_min, dates_max))
   })
 

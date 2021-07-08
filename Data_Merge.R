@@ -13,6 +13,7 @@ library(reachR)
 library(zoo)
 library(googlesheets)
 library(openxlsx)
+library(data.table)
 
 #for the server
 #setwd("Z:/")
@@ -98,7 +99,7 @@ source("./other scripts/full_modes.R")
 
 ################then begin the ananlysis of the files######################
 
-#get rid of all districts that have less than three observation
+#get rid of all districts that have less than three observation   => should we consider 2? as coverage very limited
 data_all_JMMI <- data_all_JMMI %>%
                         dplyr::group_by(jmmi, district_id)%>%
                         filter(n()>2)%>%

@@ -1,5 +1,7 @@
 # helper function for the JMMI scripts - Data Merge and global in particular
 
+### TO BE COMMENTED LATER ONLY FOR TESTING
+
 harmonise.df <- function(df){
   colnames(df) <- tolower(colnames(df))
   colnames(df) <- gsub("_all", "", colnames(df))
