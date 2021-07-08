@@ -1452,16 +1452,15 @@ server <- function(input, output, session) {
       return(addLegend(map1,"topleft", colors = legend_colors, labels = legend_labels, opacity = 0.5))
     }
 
-    map1 %>%
-      addControl(c(""), position = "topleft", className = "fieldset {border: 0;}") # add an empty legend to fix formatting issue with map [not satisfying in long run, CSS define positioning, hard to update]
-    map1 %>% addScaleBar("topleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T)) # add scale bar
+    map1 %>% addControl(c("<br><br><br>"), position = "bottomleft", className = "fieldset {border: 0;}") # add an empty legend to update their bottom margin
     # map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)            # add new legend
 
     # add legend for var
     map1 %>% 
       execute_if(!all.na, 
-                 addLegend_decreasing("topleft", pal = mypal, values =  dataM@data[,6], # update legend to reflect changes in selected district/variable shown
-                                      labFormat=labelFormat(suffix=unitA), title = title_legend, opacity = 5, decreasing = T))
+                 addLegend_decreasing("bottomleft", pal = mypal, values =  dataM@data[,6], # update legend to reflect changes in selected district/variable shown
+                                      labFormat=labelFormat(suffix=unitA), title = title_legend, opacity = 5, decreasing = T)) %>%
+      addScaleBar("bottomleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T)) # add scale bar
     
   })                                                                            # end of MAP
 
