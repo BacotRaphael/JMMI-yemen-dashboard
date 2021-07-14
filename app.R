@@ -273,7 +273,6 @@ Admin2@data<- Admin2@data %>% dplyr::mutate_if(is.factor, as.character)
 # Rshp <- merge(x=Admin2,y=Admin2data_current, by.x="admin2pcod", by.y= "district_ID")
 Rshp <- sp::merge(x=Admin2,y=Admin2table, by.x="admin2pcod", by.y= "district_ID", duplicateGeoms = TRUE,no.dups = FALSE )
 Rshp <- Rshp[!is.na(Rshp$date2),]                                               # filter out NAs date
-DistsNumb <- sum(!is.na(Rshp@data$district_name))                               # get number of districts covered...
 
 Rshp <- st_simplify(st_as_sf(Rshp), dTolerance = 0.5)
 Rshp <- st_transform(x = Rshp, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
@@ -537,49 +536,20 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                           
                           absolutePanel(                                                                # define introduction box
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = as.character(ver.anchor<-45), left = as.character(left<-45), right = "auto", bottom = "auto", width = "400", height = "350",
+                            top = as.character(ver.anchor<-20), left = as.character(left<-12), right = "auto", bottom = "auto", width = "400", height = "320",
                             h4("Introduction"),
                             p("The  Yemen  Joint  Market  Monitoring  Initiative  (JMMI) is an initative led by REACH in collaboration with the Water, Sanitation,
                               and Hygiene (WASH) Cluster  and the Cash and Market Working Group (CMWG) to support humanitarian cash actors with the harmonization of price
                               monitoring throughout Yemen. The basket of goods assessed includes five food items and eight non-food items (NFIs), including fuel, water and hygiene products.",
                               style="text-align:justify"),
-                            p("List of partners:"),
-                            # absolutePanel(id = "partners",
-                            #               # style="z-index:100;", ## z-index modification: panels are at a level of 400. Anything above that will be displayed on top.
-                            #               # style =,
-                            #               # layerProps={{ styles: { root: { zIndex: 999998 }}}},
-                            #               # top = as.character(330),
-                            #               # left = as.character(170),
-                            #               width = 200, fixed=FALSE, draggable = FALSE, height = "auto",
-                            #               dropdown(
-                            #                 h4("Our Partners"),
-                            #                 # column(p(h6("You can see the list of all of our Partners collecting data.")), width = 5),
-                            #                 # fillPage(fillRow(uiOutput("logopartners"))),
-                            #                 column(p(h6(paste0("Partners for ", month_collected, ":"))), width = 8),
-                            #                 fillPage(fillRow(uiOutput("logopartners.active"))),
-                            #                 br(),br(),br(),br(),br(),br(),br(),
-                            #                 column(p(h6(paste0("They contributed in the past:"))), width = 8),
-                            #                 fillPage(fillRow(uiOutput("logopartners.past"))),
-                            #                 br(),br(),br(),br(),br(),
-                            #                 width = "650px",
-                            #                 heigth = "3000px",
-                            #                 tooltip = tooltipOptions(title = "Click for more details on JMMI Partners."),
-                            #                 size = "xs",
-                            #                 up = FALSE,
-                            #                 style = "jelly",
-                            #                 icon = icon("handshake"),
-                            #                 animate = animateOptions(enter = "fadeInDown", exit  = "fadeOutUp", duration = 0.5)
-                            #               )
-                            # ),
                             p(tags$i(h6("Use the Map tab for spatial analysis, Plot tab for displaying price over time or in Explorer tab
-                            to navigate the data and export custom tables.
-                            ", style="color:grey;text-align:justify")),
-                            )
+                            to navigate the data and export custom tables.", style="color:grey;text-align:justify"))),
+                            p("List of partners:"),
                           ),
                           
                           absolutePanel(                                                                    # define chart box
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = as.character(ver.anchor+365), left = as.character(left), right = "auto", bottom = "auto", width = "400", height = "270",
+                            top = as.character(ver.anchor+335), left = as.character(left), right = "auto", bottom = "auto", width = "400", height = "270",
                             hchart(prices_country_home, "line",                                           # define chart
                                    hcaes(x = Date, y = Price, group = Item)) %>%
                               hc_yAxis(min = 0, title = list(text = "")) %>%
@@ -597,29 +567,29 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = as.character(ver.anchor), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "250",
+                            top = as.character(ver.anchor), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "220",
                             h4(paste0("Key Figures", " (", format(dates_max, "%b"), " ", format(dates_max, "%Y"), ")")),
                             HTML(table_changes_meb), br()
                           ),
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = as.character(ver.anchor+265), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "185",
+                            top = as.character(ver.anchor+235), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "185",
                             h4("Latest Round"),
                             HTML(table_round), br()
                           ),
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = as.character(ver.anchor+465), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "170",
+                            top = as.character(ver.anchor+435), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "170",
                             h4("Data Download"),
                             # p("Visit the Data Explorer or download the full dataset from the latest round here:"),
                             downloadButton("downloadDataLatest", style = "font-size: 12px",
                                            paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " dataset           ")),
                             br(),
                             p(h4("Download the Situation Overview:")),
-                            p(tags$a(href="https://www.impact-repository.org/document/repository/0fd12aaf/REACH_YEM_JMMI_Situation-Overview_June-2021.pdf",
-                                     paste0("JMMI Situation Overview ", month_collected))),
+                            p(h5(tags$a(href="https://www.impact-repository.org/document/repository/0fd12aaf/REACH_YEM_JMMI_Situation-Overview_June-2021.pdf",
+                                     paste0("JMMI Situation Overview ", month_collected)))),
                             # downloadButton("downloadFactsheet", style = "font-size: 12px",
                             #                paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " situation overview")),
                             br()
@@ -628,19 +598,19 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
                             top = as.character(ver.anchor), left = as.character(left+770), right = "auto", bottom = "auto",
-                            width = "400", height = "635",
+                            width = "400", height = "605",
                             h4(paste0("Overall Median Item Prices", " (", format(dates_max, "%b"), " ", format(dates_max, "%Y"), ")")),
                             HTML(table_changes), br()
                           ),
                           
-                          absolutePanel(id = "dropdown", top = as.character(ver.anchor+30), left = as.character(left+660), width = 200, fixed=FALSE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "dropdown", top = as.character(ver.anchor+27), left = as.character(left+650), width = 200, fixed=FALSE, draggable = FALSE, height = "auto",
                                         dropdown(
                                           h4("SMEB contents"),
                                           column(
                                             HTML(smeb_kbl),
                                             width = 6),
                                           column(p(h6("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item from the same market in each district.
-                                                       REACH calculates the WASH SMEB, which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (20 units), and Water Trucking (3.15 m3).")),
+                                                       REACH calculates the WASH SMEB, which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (5 units), and Water Trucking (3.15 m3).")),
                                                  p(h6("The calculation of the aggregated median price for districts and governorates is done following a stepped approach. Firstly, the median of all the price quotations related to the same market is taken. 
                                                       Secondly, the median quotation from each market is aggregated to calculate the district median. Finally, the median quotation from each district is aggregated to calculate the governorate median.")),
                                                  p(h6("More details on the SMEB can be found here:",
@@ -659,18 +629,18 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                         )
                           ),
                           
-                          absolutePanel(id = "partners", top = as.character(330), left = as.character(170), width = 200, fixed=FALSE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "partners", top = as.character(ver.anchor+278), left = as.character(left+125), width = 200, fixed=FALSE, draggable = FALSE, height = "auto",
                                         dropdown(
-                                          h4("Our Partners"),
+                                          h4("JMMI Partners"),
                                           # column(p(h6("You can see the list of all of our Partners collecting data.")), width = 5),
                                           # fillPage(fillRow(uiOutput("logopartners"))),
-                                          column(p(h6(paste0("Partners for ", month_collected, ":"))), width = 8),
+                                          column(p(h5(paste0("Partners for ", month_collected, ":"))), width = 8),
                                           fillPage(fillRow(uiOutput("logopartners.active"))),
-                                          br(),br(),br(),
-                                          column(p(h6(paste0("They contributed in the past:"))), width = 8),
+                                          br(),br(),br(),br(),br(),
+                                          column(p(h5(paste0("They contributed in the past:"))), width = 8),
                                           fillPage(fillRow(uiOutput("logopartners.past"))),
-                                          br(),br(),br(),br(),br(),br(),
-                                          width = "1000px",
+                                          br(),br(),br(),br(),br(),
+                                          width = "800px",
                                           heigth = "3000px",
                                           tooltip = tooltipOptions(title = "Click for more details on JMMI Partners."),
                                           size = "xs",
@@ -684,15 +654,6 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                           ),
 
                           # display CWG & REACH logos on bottom left
-                          
-                          tags$div(id="cite",
-                                   a(
-                                     img(src='reach_logoInforming.jpg', height= "40px"), target="_blank", href="http://www.reach-initiative.org"),
-                                     img(src='CMWG Logo.jpg', height= "40px", style='padding:1px;border:thin solid black;'),
-                                     img(src='washlogo_grey-300DPI.png', height= "40px")
-                                   ),
-
-                          # column(4, uiOutput("logopartners"))
                           
                           # tag$div(id="cite4",
                           #         a(href='https://www.acted.org/en/countries/yemen/', target = "_blank", tags$img(src='0_acted.png', height='30')),
@@ -725,23 +686,28 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                           #         a(href='https://rocye.org/', target = "_blank", tags$img(src= '0_roc.jpg', height='30'))
                           #         ),
                           # 
-                          # absolutePanel(id = "logo", class = "card",
-                          #               top = as.character(v.anch<-740),
-                          #               # bottom = 20,
-                          #               left = as.character(left),
-                          #               # left = 1200,
-                          #               fixed=TRUE, draggable = FALSE, height = "auto",
-                          #               tags$a(href='https://www.humanitarianresponse.info/sites/www.humanitarianresponse.info/files/documents/files/cmwg_yemen_smeb_gn_final_27102020.pdf', target = "_blank",
-                          #                      tags$img(src='CMWG Logo.jpg', height='40'))),
-                          # 
-                          # absolutePanel(id = "logo", class = "card",
-                          #               top = as.character(v.anch),
-                          #               bottom = 20,
-                          #               left = as.character(left+120),
-                          #               # left = 1320,
-                          #               fixed=TRUE, draggable = FALSE, height = "auto",
-                          #               tags$a(href='https://www.reach-initiative.org', target = "_blank", tags$img(src='reach_logoInforming.jpg', height='40'))),
+                          # tags$div(id="cite",
+                          #          a(
+                          #          img(src='reach_logoInforming.jpg', height= "40px"), target="_blank", href="http://www.reach-initiative.org"),
+                          #          img(src='CMWG Logo.jpg', height= "40px", style='padding:1px;border:thin solid black;'),
+                          #          img(src='washlogo_grey-300DPI.png', height= "40px")
+                          # ),
+                          
+                          absolutePanel(id = "logo", class = "card", bottom = 10, left = as.character(left),
+                                        # left = 1200, top = as.character(v.anch<-740),
+                                        fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.reach-initiative.org', target = "_blank", tags$img(src='reach_logoInforming.jpg', height='40'))),
+                          
+                          absolutePanel(id = "logo", class = "card", bottom = 10, left = as.character(left+180),
+                                        # left = 1320, top = as.character(v.anch), 
+                                        fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.humanitarianresponse.info/sites/www.humanitarianresponse.info/files/documents/files/cmwg_yemen_smeb_gn_final_27102020.pdf', target = "_blank", tags$img(src='CMWG Logo.jpg', height='40'))),
 
+                          absolutePanel(id = "logo", class = "card", bottom = 10, left = as.character(left+283),
+                                        # left = 1320, top = as.character(v.anch), 
+                                        fixed=TRUE, draggable = FALSE, height = "auto",
+                                        tags$a(href='https://www.humanitarianresponse.info/en/operations/yemen/water-sanitation-hygiene', target = "_blank", tags$img(src='washlogo_grey-300DPI.png', height='40')))
+                          
                           # display partner logos on bottom
                           # absolutePanel(id = "logo", class = "card",
                           #               # top = ver<-v.anch+60,
@@ -879,7 +845,7 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                         # The JMMI provides an indicative estimation of the prices of WASH and fuel items across districts in Yemen."),
                                         
                                         h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
-                                                  tags$strong(DistsNumb), "districts in ", tags$strong(paste0(currentD,"."))),
+                                                  tags$strong(districts_covered), "districts in ", tags$strong(paste0(currentD,"."))),
                                            ("The districts outlined in red indicate that data for the selected item was collected in that district in previous months.")),
                                         
                                         h5("Further details regarding the JMMI methodology and the Survival Minimum Expenditure Basket (SMEB) calculation can be found on the information tab.
@@ -888,7 +854,7 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                         hr(),
                                         
                                         #h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
-                                        #   tags$strong(DistsNumb), "districts in ", tags$strong(currentD))),
+                                        #   tags$strong(districts_covered), "districts in ", tags$strong(currentD))),
                                         
                                         # selectInput("variable1", h4("Select Variable Below"), vars, selected = "Food_SMEB"), #linked text
                                         
@@ -1197,7 +1163,7 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                           conditionalPanel(condition = "input.table_aggregation == 'Key Informant'",
                                            pickerInput("table_show_vars_ki",
                                                        label = "Indicators:",
-                                                       choices = names(full_data),
+                                                       choices = names(full_data)[!names(full_data) %in% "aor"],
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
                                                        selected = names(full_data),
                                                        multiple = TRUE
@@ -1452,7 +1418,7 @@ server <- function(input, output, session) {
   
   output$map_home <- renderLeaflet({
     map_home <- leaflet(options = leafletOptions(attributionControl=FALSE, zoomControl = FALSE, dragging = FALSE, minZoom = 1, maxZoom = 12)) %>%
-      setView(lng = 48.5164, lat = 17.5527, zoom = 6) %>%
+      setView(lng = 48.5164, lat = 17, zoom = 9) %>%
       addProviderTiles(providers$CartoDB.PositronNoLabels, group = "CartoDB",
                        options = providerTileOptions(opacity = 0.8))
   })
@@ -1878,8 +1844,8 @@ server <- function(input, output, session) {
 
   table_datasetInput <- reactive({
     if (input$table_aggregation == "District") {table_datasetInput1()
-      # } else {
-      # table_datasetInput2()
+      } else {
+      table_datasetInput2()
         }
     })
 
