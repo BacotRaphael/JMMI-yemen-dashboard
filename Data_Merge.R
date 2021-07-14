@@ -64,6 +64,7 @@ February_2021 <-read_excel("36.REACH_YEM_Dataset_Joint Market Monitoring Initiat
 March_2021 <-read_excel("37.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_March 2021.xlsx", sheet = 3) %>% mutate(jmmi="March_2021")
 April_2021 <- read_excel("38.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April 2021.xlsx", sheet = 3) %>% mutate(jmmi="April_2021")
 May_2021 <- read_excel("39.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May 2021.xlsx", sheet = 3) %>% mutate(jmmi="May_2021")
+June_2021 <- read_excel("40.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June 2021.xlsx", sheet = 3) %>% mutate(jmmi="June_2021")
 
 list_df = setNames(lapply(ls(), function(x) get(x)), ls())
 list_df_names <- names(list_df)
@@ -81,21 +82,19 @@ metacol <- colnames(df)[grepl("jmmi|jmmi_date|^country_|^governorate_*|^district
 data_all_JMMI <- df %>% dplyr::select(-district_name, -governorate_id, -governorate_name) %>% # Rename dataframe to fit rest of the code - Get rid of all other meta columns to only keep streamlined pcodes 
   mutate_at(vars(matches("calc|exchange|cost")), as.numeric)                          # change type as numeric for relevant columns
 
-#substitute out the pcodes to standardize the name (taken from JMMI scripting, with csv (utf-8) sheet)
-this_script_path<-(dirname(rstudioapi::getActiveDocumentContext()$path))
-setwd(this_script_path)
+# Substitute out the pcodes to standardize the name (taken from JMMI scripting, with csv (utf-8) sheet)
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 source("./other scripts/add_pcodes.R")
-#debug(add.pcodes)
+
 data_all_JMMI<-add.pcodes(data_all_JMMI) %>% dplyr::select(aor, matches("country_"), matches("governorate_"), matches("district_"), everything())
 
-#change Pcodes for origin governorates
-source("./other scripts/gov_code_switch.R")
-data_all_JMMI$fuel_gov_origin<-gov_code_switch(data_all_JMMI$fuel_gov_origin)
-data_all_JMMI$wash_gov_origin<-gov_code_switch(data_all_JMMI$wash_gov_origin)
-data_all_JMMI$food_gov_origin<-gov_code_switch(data_all_JMMI$food_gov_origin)
-#pull in the full modes script
-source("./other scripts/full_modes.R")
+source("./other scripts/gov_code_switch.R") # change Pcodes for origin governorates
+data_all_JMMI$fuel_gov_origin <- gov_code_switch(data_all_JMMI$fuel_gov_origin)
+data_all_JMMI$wash_gov_origin <- gov_code_switch(data_all_JMMI$wash_gov_origin)
+data_all_JMMI$food_gov_origin <- gov_code_switch(data_all_JMMI$food_gov_origin)
+
+source("./other scripts/full_modes.R") # pull in the full modes script
 
 ################then begin the ananlysis of the files######################
 
