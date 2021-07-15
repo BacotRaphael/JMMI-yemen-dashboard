@@ -360,6 +360,7 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
 # If you have a new item, update it in the file before running the line below.
 # Add the new item as a new row in the excel file in the corresponding order as you want it to appear in the drop down list in the dashboard.
 indicator_list <- read.xlsx("indicator_list.xlsx")
+indicator_group <- indicator_list$Group 
 
 ## Setting custom maps color palettes for all items:
 pal_red <<- colorRamp(c("#FEF2F2", "#F7B7B7", "#EE5859", "#8F3535", "#471A1A"), interpolate="linear")
@@ -837,24 +838,13 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                         height = "auto",
                                         
                                         hr(),
-                                        # h5("The Yemen Joint Market Monitoring Initiative (JMMI) is a harmonized price monitoriong initiative that focuses on informing
-                                        # the Water, Sanitation, and Hygiene (WASH) Cluster and the Cash
-                                        # and Market Working Group (CMWG) to support humanitarian activies throughout Yemen.
-                                        # The JMMI provides an indicative estimation of the prices of WASH and fuel items across districts in Yemen."),
-                                        
+
                                         h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
-                                                  tags$strong(districts_covered), "districts in ", tags$strong(paste0(currentD,"."))),
-                                           ("The districts outlined in red indicate that data for the selected item was collected in that district in previous months.")),
+                                                  tags$strong(districts_covered), "districts in ", tags$strong(paste0(currentD,".")))),
                                         
-                                        h5("Further details regarding the JMMI methodology and the Survival Minimum Expenditure Basket (SMEB) calculation can be found on the information tab.
-                                         For additional information on supply chains and market-related concerns, please visit the  ",a("REACH Resource Center", target="_blank",    href="https://www.reachresourcecentre.info/country/yemen/cycle/754/#cycle-754"), " to access the monthly situation overviews."),
+                                        h5("Further details regarding the JMMI methodology and the Survival Minimum Expenditure Basket (SMEB) calculation can be found on the information tab."),
                                         
                                         hr(),
-                                        
-                                        #h5(tags$u("Most recent findings displayed in map are from data collected in ", #DistsNumn and currentD will change based on the most recent JMMI, defined in global.R
-                                        #   tags$strong(districts_covered), "districts in ", tags$strong(currentD))),
-                                        
-                                        # selectInput("variable1", h4("Select Variable Below"), vars, selected = "Food_SMEB"), #linked text
                                         
                                         pickerInput("variable1",
                                                     label = "Select a variable below",
@@ -1078,11 +1068,11 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                         fixed=TRUE, draggable = FALSE, height = "auto",
                                         dropdown(
                                           h4("SMEB contents"),
-                                          # column(
-                                          #   HTML(smeb_kbl),
-                                          #   width = 6),
+                                          column(
+                                            HTML(smeb_kbl),
+                                            width = 6),
                                           column(p(h6("The Survival Minimum Expenditure Basket (SMEB) represents the minimum culturally adjusted group of items
-                                                               required to support a six-person Yemeni household for one month, as defined by the CWG."))
+                                                               required to support a seven-person Yemeni household for one month, as defined by the CMWG."))
                                                  ,
                                                  p(h6("The SMEB reported on this website only includes the food and water components, including a lump sump amount for
                                                                services(electricity, communication and transportation) and non-food items.")),
@@ -1213,11 +1203,11 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                       ),
                       sidebarLayout(
                         sidebarPanel(
-                          sliderInput("months","Number of months displayed", min = 1, max = 24, step = 1,value = 6, ticks = F),
+                          sliderInput("months","Number of months displayed", min = 1, max = 24, step = 1, value = 4, ticks = F),
                           h6("Displays the number of months from the most recent dataset"),
                           br(),
                           br(),
-                          sliderInput("percent","Percentage change highlighted", min = 1, max = 100, value = 20, tick=F),
+                          sliderInput("percent","Percentage change highlighted", min = 1, max = 100, value = 25, tick = F),
                           h6("Is the percent difference desired for the benchmark")
                           # ,width=2.5
                         )
