@@ -297,65 +297,69 @@ centroids1 <- as.data.frame(centroid(Admin1))
 colnames(centroids1) <- c("lon", "lat")
 centroids@data <- cbind(centroids@data, centroids1)
 
-## For drop down selection in data explorer and plot tabs 
-
+## For drop down selection in data explorer and plot tabs
 cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",        # define color palette for plot lines
                "rgb(86,179,205)",  "rgb(246,158,97)",  "rgb(255,246,122)",
                "rgb(210,203,184)", "rgb(247,172,172)", "rgb(172,172,173)",
                "rgb(210,228,208)", "rgb(171,217,230)", "rgb(251,207,176)",
                "rgb(255,251,189)", "rgb(233,229,220)")
 
-#DROP DOWN MENU SELECTIONS 
-## Drop-down for Plot & Data Explorer + map parameters
-# To be updated whenever adding new item
+## DROP DOWN MENU SELECTIONS for Plot & Data Explorer + map parameters
 
-vars <- c(
-  "SMEB"="SMEB", "SMEB Water"="WASH_SMEB", "SMEB Food"="Food_SMEB",
-  "Parallel Exchange Rates"="exchange_rates",
-  "Wheat Flour" = "wheat_flour", "Rice" = "rice", "Dry Beans" = "beans_dry", "Canned Beans" = "beans_can", "Lentils" = "lentil",
-  "Vegetable Oil" = "vegetable_oil", "Sugar" = "sugar", "Salt" = "salt", "Potato" = "potato", "Onion" = "onion", 
-  "Petrol" = "petrol", "Diesel" = "diesel",
-  "Bottled Water"="bottled_water", "Treated Water"="treated_water",
-  "Soap"="soap", "Laundry Powder"="laundry_powder", "Sanitary Napkins"="sanitary_napkins", "Bleach"="bleach", "Cooking gas"="cooking_gas",
-  "Water Trucking"= "cost_cubic_meter"
-)
+## A. Code below to produce the base for the indicator list. Should be commented unless you lost the original file for some reason.
+# vars <- c("SMEB"="SMEB", "SMEB Water"="WASH_SMEB", "SMEB Food"="Food_SMEB",
+#           "Parallel Exchange Rates"="exchange_rates",
+#           "Wheat Flour" = "wheat_flour", "Rice" = "rice", "Dry Beans" = "beans_dry", "Canned Beans" = "beans_can", "Lentils" = "lentil",
+#           "Vegetable Oil" = "vegetable_oil", "Sugar" = "sugar", "Salt" = "salt", "Potato" = "potato", "Onion" = "onion",
+#           "Petrol" = "petrol", "Diesel" = "diesel",
+#           "Bottled Water"="bottled_water", "Treated Water"="treated_water", "Water Trucking"= "cost_cubic_meter",
+#           "Soap"="soap", "Laundry Powder"="laundry_powder", "Sanitary Napkins"="sanitary_napkins", "Bleach"="bleach", "Cooking gas"="cooking_gas")
+# vars_functionnality <- colnames(indicators)[!colnames(indicators) %in% c("Date", "Governorate", "District")]
+# replace.name <- c("mrk_increse_food_100"="If the demand for food items were to increase by 100%, would you be able to respond to this increase?",
+#                   "mrk_increse_food_50"="If the demand for food items were to increase by 50%, would you be able to respond to this increase?",
+#                   "mrk_increse_fuel_100"="If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?",
+#                   "mrk_increse_fuel_50"="If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?",
+#                   "mrk_increse_wash_100"="If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?",
+#                   "mrk_increse_wash_50"="If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?",
+#                   "mrk_increse_water_100"="If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?",
+#                   "mrk_increse_water_50"="If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?",
+#                   "mrk_supply_issues.dmg_storage"="Supply issues: Destruction/damage to storage capacity",
+#                   "mrk_supply_issues.move_restriction"="Supply issues: Movement restrictions (check points, curfews, roadblocks, etc)",
+#                   "mrk_supply_routes"="Have supply routes changed in a way harmful to your business in the past 30 days?")
+# names_vars_functionnality <- stringr::str_replace_all(vars_functionnality, replace.name) %>% gsub("_", " ", .) %>% gsub("sell", "% of vendors selling",.)
+# n_mkt_fun <- length(vars_functionnality)
+# title.legend <- c("SMEB Cost", "WASH SMEB Cost", "Food SMEB Cost",
+#                   "YER to 1 USD",
+#                   "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)",
+#                   "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)",
+#                   "Price (1 L)", "Price (1 L)",
+#                   "Price (0.75 L)", "Price (10 L)", "Price (18.8kg)",
+#                   "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)", "Price (1 L)",
+#                   rep("	% of traders", n_mkt_fun))
+# unit <- c(rep(" YER", 24), rep(" %", n_mkt_fun))
+# indicator_group <- c(rep("I. Indices", 3),
+#                      "II. Currencies",
+#                      rep("III. Food items", 10),
+#                      rep("IV. Fuels", 2),
+#                      rep("V. Water", 3),
+#                      rep("VI. Non-food items", 5),
+#                      rep("VII. Other indicators", n_mkt_fun))
+# variables <- c(unname(vars), vars_functionnality)
+# Item <- c(names(vars), names_vars_functionnality)
+# Item2 <- stringr::str_wrap(Item, width = 45)                                    # To wrap the choices that are too large in the drop down menu
+# Item2 <- stringr::str_replace_all(Item2, "\\n", "<br>")
+# 
+# indicator_list <- data.frame(Item=Item,                                         ## Building the indicator list with labels
+#                              Item2=Item2,
+#                              Variable=variables,
+#                              Group = indicator_group,
+#                              Legend = title.legend,
+#                              Unit = unit)
 
-vars_functionnality <- colnames(indicators)[-(1:3)]
-names(vars_functionnality) <- 
-  c("If the demand for food items were to increase by 100%, would you be able to respond to this increase?",
-    "If the demand for food items were to increase by 50%, would you be able to respond to this increase?",
-    "If the demand for fuel items were to increase by 100%, would you be able to respond to this increase?",
-    "If the demand for fuel items were to increase by 50%, would you be able to respond to this increase?",
-    "If the demand for WASH items were to increase by 100%, would you be able to respond to this increase?",
-    "If the demand for WASH items were to increase by 50%, would you be able to respond to this increase?",
-    "If the demand for water trucking were to increase by 100%, would you be able to respond to this increase?",
-    "If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?",
-    "Supply issues: Destruction/damage to storage capacity",
-    "Supply issues: Movement restrictions (check points, curfews, roadblocks, etc)",
-    "Have supply routes changed in a way harmful to your business in the past 30 days?",
-    paste0("% of vendors ", gsub("sell", "selling", gsub("_", " ", vars_functionnality[grepl("sell", vars_functionnality)])))
-     )
-n_mkt_fun <- length(vars_functionnality)
-
-title.legend <- c("SMEB Cost", "WASH SMEB Cost", "Food SMEB Cost",
-                  "YER to 1 USD",
-                  "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)", 
-                  "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", 
-                  "Price (1 L)", "Price (1 L)",
-                  "Price (0.75 L)", "Price (10 L)", 
-                  "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)", "Price (1 L)", "Price (18.8kg)",
-                  rep("	% of traders", n_mkt_fun))
-unit <- c(rep(" YER", 24),
-          rep(" %", n_mkt_fun))
-
-indicator_group <- c(rep("I. Indices", 3), 
-                     "II. Currencies",
-                     rep("III. Food items", 10),
-                     rep("IV. Fuels", 2),
-                     rep("V. Water", 2),
-                     rep("VI. Non-food items", 5),
-                     "V. Water",
-                     rep("VI. Other indicators", n_mkt_fun))
+## B. Import the indicator list which maps variable names with label names, category and unit for layout in the dashboard
+# If you have a new item, update it in the file before running the line below.
+# Add the new item as a new row in the excel file in the corresponding order as you want it to appear in the drop down list in the dashboard.
+indicator_list <- read.xlsx("indicator_list.xlsx")
 
 ## Setting custom maps color palettes for all items:
 pal_red <<- colorRamp(c("#FEF2F2", "#F7B7B7", "#EE5859", "#8F3535", "#471A1A"), interpolate="linear")
@@ -366,21 +370,13 @@ pal_yellow <<- colorRamp(c("#FFFDDD", "#FFF9A9", "#FFF67A", "#B2AC55", "#666231"
 palette <- c(rep("pal_blue", length(indicator_group[indicator_group %in% c("I. Indices", "II. Currencies", "V. Water")])),
              rep("pal_green", length(indicator_group[indicator_group %in% c("III. Food items")])),
              rep("pal_red", length(indicator_group[indicator_group %in% c("IV. Fuels", "VI. Non-food items")])),
-             rep("pal_yellow", length(indicator_group[indicator_group %in% c("VI. Other indicators")]))) %>% lapply(get)      
+             rep("pal_yellow", length(indicator_group[indicator_group %in% c("VII. Other indicators")]))) %>% lapply(get)      
 
-# Indicator_list => will determine drop down list + legend + palettes for maps
-Item <- names(c(vars, vars_functionnality))
-Item2 <- stringr::str_wrap(Item, width = 45)  # To wrap the choices that are too large in the drop down menu
-Item2 <- stringr::str_replace_all(Item2, "\\n", "<br>")
+# Adding the color palette to the indicator list for the map
+indicator_list <- indicator_list %>% mutate(Palette = I(palette))
 
-indicator_list <- data.frame(Item=Item,
-                             Item2=Item2,
-                             Variable=unname(c(vars, vars_functionnality)),
-                             Group = indicator_group,
-                             Legend = title.legend,
-                             Unit = unit,
-                             Palette = I(palette))
-write.xlsx(indicator_list %>% dplyr::select(-Palette), "indicator_list.xlsx")
+# Uncomment the below line to keep a trace of the indicator list for archive
+# write.xlsx(indicator_list %>% dplyr::select(-Palette), "indicator_list_out.xlsx")
 
 plot_location_list <- Admin2table %>% ungroup %>%                               # Define location list
   dplyr::rename(Governorate=government_name, District=district_name) %>%
@@ -474,18 +470,18 @@ table_changes <- prices_changes_items %>%                                       
 
 # Dashboard tables
 
-smeb <- data.frame(Category = c(rep("Water", 4), rep("Food Items", 5), "Non-food items & shelter", "Services"), # define SMEB content table
+smeb <- data.frame(Category = c(rep("WASH SMEB", 4), rep("Food SMEB", 5), "Non-food items & shelter", "Services"), # define SMEB content table
                    Item = c("Soap", "Laundry powder", "Sanitary Napkins", "Cubic meter water",
                             "Wheat flour", "Beans dry","Vegetable oil", "Sugar", "Salt", "NFI & shelter lumpsum", "Services lumpsum"),
-                   Quantity = c("10.5 ", "20 Kg", "2 Boxes", "3.15 m^3", "7.5 Kg", "10 ", "8 ", "2.5 ", "1Kg",
+                   Quantity = c("10.5 ", "2 Kg", "5 Boxes", "3.15 m^3", "7.5 Kg", "10 ", "8 ", "2.5 ", "1Kg",
                                 "North: 25'000 YER\nSouth: 28'750 YER", "North: 19'000 YER \nSouth: 21'850 YER"))
 
 smeb_kbl <- smeb %>%                                                                                      # make a html (kable) object out of dataframe
   kbl(escape = F) %>%
   kable_styling(bootstrap_options = c("hover", "condensed", "striped"), fixed_thead = T, full_width = F) %>%
-  column_spec(1, width = "8em", bold = T, background = "white") %>%
+  column_spec(1, width = "9em", bold = T, background = "white") %>%
   column_spec(2, width = "10em") %>%
-  column_spec(3, width = "12em") %>%
+  column_spec(3, width = "13em") %>%
   collapse_rows(columns = 1, valign = "top") %>%
   row_spec(0:nrow(smeb), extra_css = "font-size: 11px;")
 
@@ -538,12 +534,12 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
                             top = as.character(ver.anchor<-20), left = as.character(left<-12), right = "auto", bottom = "auto", width = "400", height = "320",
                             h4("Introduction"),
-                            p("The  Yemen  Joint  Market  Monitoring  Initiative  (JMMI) is an initative led by REACH in collaboration with the Water, Sanitation,
-                              and Hygiene (WASH) Cluster  and the Cash and Market Working Group (CMWG) to support humanitarian cash actors with the harmonization of price
-                              monitoring throughout Yemen. The basket of goods assessed includes five food items and eight non-food items (NFIs), including fuel, water and hygiene products.",
+                            p("The Yemen Joint Market Monitoring Initiative (JMMI) is an initiative led by REACH in collaboration with the Water, 
+                              Sanitation, and Hygiene (WASH) Cluster and the Cash and Market Working Group (CMWG) to support humanitarian cash actors 
+                              with the harmonization of price monitoring throughout Yemen. 
+                              The basket of goods assessed includes ten food items and ten non-food items (NFIs), including fuel, water and hygiene products.",
                               style="text-align:justify"),
-                            p(tags$i(h6("Use the Map tab for spatial analysis, Plot tab for displaying price over time or in Explorer tab
-                            to navigate the data and export custom tables.", style="color:grey;text-align:justify"))),
+                            p(tags$i(h6("The JMMI would not be possible without the +30 partner organisations who currently collect data, or have collected data in the past!", style="color:grey;text-align:justify"))),
                             p("List of partners:"),
                           ),
                           
@@ -610,10 +606,12 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                             HTML(smeb_kbl),
                                             width = 6),
                                           column(p(h6("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item from the same market in each district.
-                                                       REACH calculates the WASH SMEB, which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (5 units), and Water Trucking (3.15 m3).")),
-                                                 p(h6("The calculation of the aggregated median price for districts and governorates is done following a stepped approach. Firstly, the median of all the price quotations related to the same market is taken. 
-                                                      Secondly, the median quotation from each market is aggregated to calculate the district median. Finally, the median quotation from each district is aggregated to calculate the governorate median.")),
-                                                 p(h6("More details on the SMEB can be found here:",
+                                                       REACH calculates different the Food SMEB, WASH SMEB and estimation of the total SMEB using two lumpsum amounts to account for cost of services, non-food items and shelter.
+                                                       The weight for each index is detailed in the table on the left.")),
+                                                 p(h6("The calculation of the aggregated median price for districts and 
+                                          governorates is done following a stepped approach. The median of all the price quotations collected is aggregated to calculate the district and the governorate median price. 
+                                                      Governorate medians are calculated using market level prices to keep granularity of data given the limited coverage of JMMI in Yemen.")),
+                                                 p(h6("More details on the calculation of the SMEB can be found here:",
                                                       tags$a(href="https://www.humanitarianresponse.info/sites/www.humanitarianresponse.info/files/documents/files/cmwg_yemen_smeb_gn_final_27102020.pdf",
                                                              "SMEB Guidance Note"), ".")),
                                                  width = 5),
@@ -1248,45 +1246,59 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                         tags$head(
                           # Include our custom CSS
                           shiny::includeCSS("styles.css"),
-                          style=" { height:90vh; overflow-y: scroll; }
+                          style=" { height:90vh; overflow-y: scroll; word-wrap: break-word;}
                                               "),
                         
                         column(width=8,h3("Overview")), #h1- h5 change the header level of the text
                         
-                        column(width=7,h5("The  Yemen  Joint  Market  Monitoring  Initiative  (JMMI) is an
-                                          initative led by REACH in collaboration with the Water, Sanitation,
-                                          and Hygiene (WASH) Cluster  and the Cash and Market Working Group (CMWG)
-                                          to support humanitarian cash actors with the harmonization of price
-                                          monitoring throughout Yemen. The basket of goods assessed includes eight
-                                          non-food items (NFIs), including fuel, water and hygiene products,
-                                          reflecting the programmatic areas of the WASH Cluster. The JMMI
-                                          tracks all components of the WASH Survival Minimum Expenditure Basket
-                                          (SMEB) since September 2018.")),
+                        column(width=7,h5("The Yemen Joint Market Monitoring Initiative (JMMI) is an initiative 
+                                          led by REACH in collaboration with the Water, Sanitation, and Hygiene 
+                                          (WASH) Cluster and the Cash and Market Working Group (CMWG) to support 
+                                          humanitarian cash actors with the harmonization of price monitoring throughout Yemen. 
+                                          The basket of goods assessed includes eight non-food items (NFIs), including fuel, 
+                                          water and hygiene products, reflecting the programmatic areas of the WASH Cluster. 
+                                          The JMMI tracks all components of the WASH Survival Minimum Expenditure Basket (SMEB) 
+                                          since September 2018.")),
                         
                         column(width=8,h3("Methodology")), #h1- h5 change the header level of the text
                         
-                        column(width=7,h5("Data was collected through interviews with vendor Key Informants
-                                          (KIs), selected by partner organizations from markets of various sizes
-                                          in both urban and rural areas. To be assessed by the JMMI, markets
-                                          must be either a single permanent market, or a local community where
-                                          multiple commercial areas are located in close proximity to one another.
-                                          When possible, markets/shops are selected within a single geographical
-                                          location, where there is at least one wholesaler operating in the
-                                          market, or multiple areas of commerce within the same geographical
-                                          location when it is too small, to provide a minimum of three price
-                                          quotations per assessed item.", tags$i(tags$strong("Findings are indicative for the assessed
-                                          locations and timeframe in which the data was collected.")))),
+                        column(width=7,h5("Data was collected through interviews with vendor Key Informants (KIs), 
+                                          selected by partner organizations from markets of various sizes in both 
+                                          urban and rural areas. To be assessed by the JMMI, markets must be either 
+                                          a single permanent market, or a local community where multiple commercial 
+                                          areas are located in close proximity to one another. When possible, markets/shops 
+                                          are selected within a single geographical location, where there is at least one 
+                                          wholesaler operating in the market, or multiple areas of commerce within the same 
+                                          geographical location when it is too small, to provide a minimum of three price 
+                                          quotations per assessed item. Findings are indicative for the assessed locations 
+                                          and timeframe in which the data was collected.",
+                        tags$i(tags$strong("Findings are indicative for the assessed locations and timeframe in which the data was collected.")))),
                         
                         column(width=8,h3("SMEB Calculation")), #h1- h5 change the header level of the text
                         
-                        column(width=7,h5("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item from the same market in each district.
+                        column(width=7,h5("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item in each district.
                                           REACH calculates the WASH SMEB,
-                                          which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (20 units) ,and Water Trucking (3.15 m3).",
+                                          which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (5 units) ,and Water Trucking (3.15 m3).",
                                           p(),
-                                          p("The calculation of the aggregated median price for districts and governorates is done following a stepped approach.
-                                          Firstly, the median of all the price quotations related to the same market is taken. Secondly, the median quotation from each market is aggregated to calculate the district median.
-                                          Finally, the median quotation from each district is aggregated to calculate the governorate median. "))),
+                                          p("The calculation of the aggregated median price for districts and 
+                                          governorates is done following a stepped approach.
+                                          The median of all the price quotations collected is aggregated to 
+                                          calculate the district and the governorate median price.
+                                          Governorate medians are calculated using market level prices to keep 
+                                          granularity of data given the limited coverage of JMMI in Yemen. 
+                                          The final analysis is shared with the REACH Research & Data Unit at 
+                                          headquarters for review and validation."))),
                         
+                        column(width=8,h3("Help us collect data!")), #h1- h5 change the header level of the text
+                        
+                        column(width=7,h5("The Joint-Marketing Initiative would not be possible without the help 
+                        of +30 partners, who currently collect data or have collected data in the past. The aim 
+                        is to incorporate as many districts of Yemen as possible into regular data collection cycle. 
+                        Partners wishing to participate in data collection identify the districts in which they are 
+                        able to consistently collect data throughout the coming months. Participating organisations 
+                        receive the data collection tools, and trainings on the JMMI methodology, from REACH. 
+                        Do you want to participate in the JMMI? Contact us at ",
+                                          tags$a(href="mailto:yemen@reach-initiative.org", "yemen@reach-initiative.org"))),
                         
                         column(width=8,h3("About REACH")), #h1- h5 change the header level of the text
                         
@@ -1298,7 +1310,7 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                           activities are conducted in support to and within the framework of
                                           inter-agency aid coordination  mechanisms. For more information, please
                                           visit our",a("REACH Website", target="_blank",    href="https://www.reach-initiative.org"), "or contact us directly
-                                          at yemen@reach-initiative.org.")),
+                                          at ", tags$a(href="mailto:yemen@reach-initiative.org", "yemen@reach-initiative.org"))),
                         
                         hr(),
                         p(),
@@ -1418,7 +1430,7 @@ server <- function(input, output, session) {
   
   output$map_home <- renderLeaflet({
     map_home <- leaflet(options = leafletOptions(attributionControl=FALSE, zoomControl = FALSE, dragging = FALSE, minZoom = 1, maxZoom = 12)) %>%
-      setView(lng = 48.5164, lat = 17, zoom = 9) %>%
+      setView(lng = 49, lat = 17, zoom = 7) %>%
       addProviderTiles(providers$CartoDB.PositronNoLabels, group = "CartoDB",
                        options = providerTileOptions(opacity = 0.8))
   })
@@ -1495,10 +1507,11 @@ server <- function(input, output, session) {
                             style = list("color" = "#222224", "font-size" = "12px", "font-family"= "Helvetica", "font-weight"= 500))) %>%
 
       addPolygons(data = dataM,                                                  # Add subsetted district shapefiles
-                  color = "#58585A", weight = 0.25,opacity = 0.5, smoothFactor = 0.8, fill = TRUE, fillOpacity = 0.8, fillColor =  (~mypal((dataM@data[,6]))), 
+                  color = "#58585A", weight = 0.25, opacity = 0.5, smoothFactor = 0.8, fill = TRUE, fillOpacity = 0.8, fillColor =  (~mypal((dataM@data[,6]))), 
                   label = lapply(paste0(dataM$admin2name," (", pLa, dataM@data[,6], indicator_list[indicator_list$Item==input$variable1, "Unit"],")<p>Number of observations: ", dataM@data[,paste0("n_", VARIA)]), htmltools::HTML),
                   layerId = ~admin2pcod, highlightOptions = highlightOptions(color = "black", weight = 2, bringToFront = FALSE, sendToBack = FALSE),
-                  popup = paste0(dataM$admin2name, "<br>",'<h7 style="color:black;">', pLa, "<b>"," ", dataM@data[,6],unitA, "</b>", '</h7>')) %>%
+                  popup = paste0(dataM$admin2name, "<br>",'<h7 style="color:black;">', pLa, "<b>"," ", dataM@data[,6],unitA, "</b>", '</h7>', "<br>",
+                                 "Number of observations: ", "<b>", dataM@data[,paste0("n_", VARIA)], "</b>")) %>%
       
       addPolylines(data = Admin1, weight= 0.5, stroke = T, color = "#58585A", fill=FALSE, fillOpacity = 0.1, opacity = 1) # Add governorate lines for reference
                    
@@ -1515,15 +1528,11 @@ server <- function(input, output, session) {
     sizes<-c("20")
     shapes<-c("square")
     borders<-c("#EE5859")
+    
     addLegendCustom <- function(map, colors, labels, sizes, shapes, borders, opacity = 0.5){
-
-      make_shapes <- function(colors, sizes, borders, shapes) {
-        shapes <- gsub("square", "0%", gsub("circle", "50%", shapes))
-        paste0(colors, "; width:", sizes, "px; height:", sizes, "px; border:3px solid ", borders, "; border-radius:", shapes)
-      }
-      make_labels <- function(sizes, labels) {
-        paste0("<div style='display: inline-block;height: ", sizes, "px;margin-top: 4px;line-height: ", sizes, "px;'>", labels, "</div>")
-      }
+      make_shapes <- function(colors, sizes, borders, shapes) {shapes <- gsub("square", "0%", gsub("circle", "50%", shapes))
+      paste0(colors, "; width:", sizes, "px; height:", sizes, "px; border:3px solid ", borders, "; border-radius:", shapes)}
+      make_labels <- function(sizes, labels) {paste0("<div style='display: inline-block;height: ", sizes, "px;margin-top: 4px;line-height: ", sizes, "px;'>", labels, "</div>")}
       legend_colors <- make_shapes(colors, sizes, borders, shapes)
       legend_labels <- make_labels(sizes, labels)
       
@@ -1532,9 +1541,8 @@ server <- function(input, output, session) {
 
     map1 %>% addControl(c("<br><br><br>"), position = "bottomleft", className = "fieldset {border: 0;}") # add an empty legend to update their bottom margin
     # map1 %>% addLegendCustom(colors, labels, sizes, shapes, borders)            # add new legend
-
-    # add legend for var
-    map1 %>% 
+    
+    map1 %>%                                                                    # add legend for var 
       execute_if(!all.na, 
                  addLegend_decreasing("bottomleft", pal = mypal, values =  dataM@data[,6], # update legend to reflect changes in selected district/variable shown
                                       labFormat=labelFormat(suffix=unitA), title = title_legend, opacity = 5, decreasing = T)) %>%
