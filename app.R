@@ -511,10 +511,10 @@ partners.past <- partners %>% filter(active==0) %>%
 
 # UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 
-ui <- fillPage( # tagList( before => if layout issue go back to this
+ui <- tagList( # fillPage( before => if layout issue go back to this
 
   navbarPage("REACH: Yemen Joint Market Monitoring Initiative (JMMI)",
-             
+            
              collapsible = T, windowTitle = "REACH: Yemen Joint Market Monitoring Initiative (JMMI)", # Title for browser tab window
              
              #### * 6.1 Home ######################################################################
@@ -522,8 +522,9 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
              tabPanel("Dashboard",                                                                      # define panel title
                       icon = icon("tachometer-alt"),                                                    # select icon to be displayed in front of title
                       
-                      # tags$head(shiny::includeCSS("styles.css"),                                        # Include our custom CSS
-                      #           style =" {overflow-y: scroll; }"),
+                      tags$head(shiny::includeCSS("styles.css")                                        # Include our custom CSS
+                      #           , style =" {overflow-y: scroll; }"
+                      ),
                       
                       div(class="dashboard",                                                            # set dashboard class from CSS file
                           
@@ -535,10 +536,11 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
                             top = as.character(ver.anchor<-20), left = as.character(left<-12), right = "auto", bottom = "auto", width = "400", height = "320",
                             h4("Introduction"),
-                            p("The Yemen Joint Market Monitoring Initiative (JMMI) is an initiative led by REACH in collaboration with the Water, 
-                              Sanitation, and Hygiene (WASH) Cluster and the Cash and Market Working Group (CMWG) to support humanitarian cash actors 
-                              with the harmonization of price monitoring throughout Yemen. 
-                              The basket of goods assessed includes ten food items and ten non-food items (NFIs), including fuel, water and hygiene products.",
+                            p("The Yemen Joint Market Monitoring Initiative (JMMI) is an initiative led by 
+                              REACH in collaboration with the Water, Sanitation, and Hygiene (WASH) Cluster 
+                              and the Cash and Markets Working Group (CMWG) to support humanitarian actors with 
+                              the harmonization of market monitoring throughout Yemen. It includes price monitoring 
+                              for ten food items and ten non-food items (NFIs), including fuel, water and hygiene products.",
                               style="text-align:justify"),
                             p(tags$i(h6("The JMMI would not be possible without the +30 partner organisations who currently collect data, or have collected data in the past!", style="color:grey;text-align:justify"))),
                             p("List of partners:"),
@@ -652,46 +654,6 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                         )
                           ),
 
-                          # display CWG & REACH logos on bottom left
-                          
-                          # tag$div(id="cite4",
-                          #         a(href='https://www.acted.org/en/countries/yemen/', target = "_blank", tags$img(src='0_acted.png', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_almaroof.jpg', height='30')),
-                          #         a(href='https://adra.org/', target = "_blank", tags$img(src='0_adra.png', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_thadamon.jpg', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_b4d.jpg', height='30')),
-                          #         a(href='http://yfca.org/en/', target = "_blank", tags$img(src='0_yfca.jpg', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_ysd.jpg', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_vision.png', height='30')),
-                          #         a(href='https://www.zoa-international.com/files/yemen/', target = "_blank", tags$img(src='0_zoa.PNG', height='30')),
-                          #         a(href='https://www.facebook.com/sama.alyemen.5', target = "_blank", tags$img(src='0_sama.jpg', height='30')),
-                          #         a(href='https://www.solidarites.org/en/missions/yemen/', target = "_blank", tags$img(src='0_si.jpeg', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_tyf.png', height='30')),
-                          #         a(href='https://www.nrc.no/countries/middle-east/yemen/', target = "_blank", tags$img(src='0_nrc.png', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_steps.jpg', height='30')),
-                          #         a(href='http://bchr-ye.org/', target = "_blank", tags$img(src='0_bchr.jpg', height='30')),
-                          #         a(href='https://www.facebook.com/cyf.org77/', target = "_blank", tags$img(src='0_cyf.jpg', height='30')),
-                          #         a(href='http://www.drc.dk', target = "_blank", tags$img(src='0_drc.png', height='30')),
-                          #         a(href='https://www.facebook.com/noqat.org/', target = "_blank", tags$img(src='0_gwq.png', height='30')),
-                          #         a(href='https://www.iom.int/countries/yemen', target = "_blank", tags$img(src='0_iom.png', height='30')),
-                          #         a(href='https://www.rescue.org/', target = "_blank", tags$img(src='0_IRC.jpg', height='30', length='30')),
-                          #         a(href='https://www.mercycorps.org/where-we-work/yemen', target = "_blank", tags$img(src='0_mercy.jfif', height='30')),
-                          #         a(href='http://nfdhr.org/', target = "_blank", tags$img(src='0_nfdhr.png', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_nfhd.png', height='30')),
-                          #         a(href='https://www.oxfam.org/en/tags/yemen', target = "_blank", tags$img(src='0_oxfam.png', height='30')),
-                          #         a(href='https://yemen.savethechildren.net/', target = "_blank", tags$img(src='0_sci.png', height='30')),
-                          #         a(href='', target = "_blank", tags$img(src='0_ocfd.jpg', height='30')),
-                          #         a(href='https://www.facebook.com/TamdeenYouth/', target = "_blank", tags$img(src='0_soul.jpg', height='30')),
-                          #         a(href='https://rocye.org/', target = "_blank", tags$img(src= '0_roc.jpg', height='30'))
-                          #         ),
-                          # 
-                          # tags$div(id="cite",
-                          #          a(
-                          #          img(src='reach_logoInforming.jpg', height= "40px"), target="_blank", href="http://www.reach-initiative.org"),
-                          #          img(src='CMWG Logo.jpg', height= "40px", style='padding:1px;border:thin solid black;'),
-                          #          img(src='washlogo_grey-300DPI.png', height= "40px")
-                          # ),
-                          
                           absolutePanel(id = "logo", class = "card", bottom = 10, left = as.character(left),
                                         # left = 1200, top = as.character(v.anch<-740),
                                         fixed=TRUE, draggable = FALSE, height = "auto",
@@ -808,9 +770,9 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                           tags$head(
                             # Include our custom CSS
                             shiny::includeCSS("AdminLTE.css"),
-                            shiny::includeCSS( "bootstrap.css"), #added
+                            shiny::includeCSS("bootstrap.css"), # added
                             shiny::includeCSS(path = "shinydashboard.css"),
-                            # br()# added => was causing an issue by adding whitespace at the beginning of the page
+                            # br() # added => was causing an issue by adding whitespace at the beginning of the page
                           ),
                           
                           #LEAFLET MAP
@@ -894,22 +856,22 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                         
                           ),
                           
-                          
                           tags$div(id="cite",
                                    a(img(src='reach_logoInforming.jpg', height= "40px"), target="_blank", href="http://www.reach-initiative.org"),
                                    img(src='CMWG Logo.jpg', height= "40px", style='padding:1px;border:thin solid black;'),
                                    img(src='washlogo_grey-300DPI.png', height= "40px"))
                           
-                          # tags$div(id="cite",
-                          #          a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org"))
                       )
              ),
              
              #### Plot ######################################################################
              
-             tabPanel("Plot",                                                                         # set panel title
+             tabPanel("Plot",                                                                               # set panel title
+                      
                       icon = icon("chart-line"),                                                            # select icon
+                      
                       chooseSliderSkin(skin = "Flat", color = NULL),                                        # set theme for sliders
+                      
                       sidebarLayout(
                         
                         sidebarPanel(
@@ -1063,7 +1025,6 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                           h6("Select aggregation level, item(s), location(s) and month from drop-down menues to update plot.
                                     Displayed values are median prices - retail prices are first aggregated on site level and then
                                     on district level (and then on governorate/country level)."),
-                          
                           absolutePanel(id = "dropdown", bottom = 20, left = 20, width = 200,                            # define blue info button
                                         fixed=TRUE, draggable = FALSE, height = "auto",
                                         dropdown(
@@ -1072,17 +1033,9 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                             HTML(smeb_kbl),
                                             width = 6),
                                           column(p(h6("The Survival Minimum Expenditure Basket (SMEB) represents the minimum culturally adjusted group of items
-                                                               required to support a seven-person Yemeni household for one month, as defined by the CMWG."))
-                                                 ,
+                                                               required to support a seven-person Yemeni household for one month, as defined by the CMWG.")),
                                                  p(h6("The SMEB reported on this website only includes the food and water components, including a lump sump amount for
                                                                services(electricity, communication and transportation) and non-food items.")),
-                                                 # p(h6("The composition of the SMEB was revised twice: 1) In the September
-                                                 # 2018 round and onwards, the current water component replaced the fuel component. 2) Since January 2020,
-                                                 #               the SMEB furthermore includes modified food and NFI components.")),
-                                                 # p(h6("More details on the SMEB can be found here:",
-                                                 #      tags$a(href="https://www.humanitarianresponse.info/en/operations/iraq/document/survival-minimum-expenditure-basket-technical-guidance-note-october-2019",
-                                                 #             "SMEB Guidance Note"), "."))
-                                                 # ,
                                                  width = 5),
                                           width = "650px",
                                           # tooltip = tooltipOptions(title = "Click for more details on the SMEB."),
@@ -1095,7 +1048,6 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                             duration = 0.5)
                                         )
                           ),
-                          
                           width = 3,                                                                    # set bootstrap width of sidebar (out of 12)
                         ),                                                                                # close sidebar panel
                         
@@ -1118,6 +1070,7 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
              tabPanel("Explorer", icon = icon("table"),
                       
                       sidebarLayout(
+                        
                         sidebarPanel(
                           
                           radioGroupButtons("table_aggregation",
@@ -1153,7 +1106,7 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                                        label = "Indicators:",
                                                        choices = names(full_data)[!names(full_data) %in% "aor"],
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
-                                                       selected = names(full_data),
+                                                       selected = names(full_data)[1:3],
                                                        multiple = TRUE
                                            )
                           ),
@@ -1162,7 +1115,7 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                       label = "Districts:",
                                       choices = lapply(split(plot_location_list$District, plot_location_list$Governorate), as.list),
                                       options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
-                                      selected = plot_location_list$District,
+                                      selected = plot_location_list$District[1:2],
                                       multiple = TRUE
                           ),
                           
@@ -1170,7 +1123,8 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                                           "Months:",
                                           force_edges = TRUE,
                                           choices = dates,
-                                          selected = c("2021-03-01", "2021-03-01")
+                                          selected = c(dates[(length(dates)-3)], dates_max)
+                                          # selected = c("2021-03-01", "2021-03-01")
                                           # ,selected = c(dates_min, dates_max)
                           ),
                           
@@ -1192,8 +1146,7 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
              
              
              tabPanel("Tracker",
-                      
-                      
+
                       style=("{overflow-y:auto; }"),
                       icon= icon("bar-chart"), #info-circle
                       div(tags$head(
@@ -1220,95 +1173,77 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
                         )
                       )
                       
-                      
-                      
-                      
                       )),
              
              
              ###..................................I N F O. . P A G E ..........................................
              tabPanel("Information",
-                      tags$head(tags$style("{ height:90vh; overflow-y: scroll; }")),
+                      tags$head(tags$style("{ height:90vh; overflow-y:auto;}")),
                       
                       icon= icon("info"), #info-circle
                       div(#class="outer",
                         
                         tags$head(
                           # Include our custom CSS
-                          shiny::includeCSS("styles.css"),
-                          style=" { height:90vh; overflow-y: scroll; word-wrap: break-word;}
-                                              "),
+                          shiny::includeCSS("styles.css")
+                          , style=" { height:90vh; overflow-y:auto;} "
+                          ),
+                        # br(),
+                        column(width=8,p(),h4("Overview")), #h1- h5 change the header level of the text
                         
-                        column(width=8,h3("Overview")), #h1- h5 change the header level of the text
+                        column(width=7,
+                               h6("The Joint Market Monitoring Initiative (JMMI) is a monitoring exercise 
+                                   in Yemen that was initiated by the Water, Sanitation, and Hygiene (WASH) 
+                                   Cluster and the Cash and Markets Working Group (CMWG) to support humanitarian 
+                                   actors with market monitoring including price levels and supply chains. 
+                                   The JMMI aims to improve the ways in which the CMWG and its partners gather 
+                                   and share information, in order to produce an evidence base that can easily 
+                                   be accessed and utilized to inform the design and implementation of cash programming. 
+                                   In doing so, the JMMI aims to increase the harmonization of partner data collection tools 
+                                   and processes, and provides technical support to design robust data collection tools 
+                                   and methodologies.")),
                         
-                        column(width=7,h5("The Yemen Joint Market Monitoring Initiative (JMMI) is an initiative 
-                                          led by REACH in collaboration with the Water, Sanitation, and Hygiene 
-                                          (WASH) Cluster and the Cash and Market Working Group (CMWG) to support 
-                                          humanitarian cash actors with the harmonization of price monitoring throughout Yemen. 
-                                          The basket of goods assessed includes eight non-food items (NFIs), including fuel, 
-                                          water and hygiene products, reflecting the programmatic areas of the WASH Cluster. 
-                                          The JMMI tracks all components of the WASH Survival Minimum Expenditure Basket (SMEB) 
-                                          since September 2018.")),
+                        column(width=8,h4("Methodology")), #h1- h5 change the header level of the text
                         
-                        column(width=8,h3("Methodology")), #h1- h5 change the header level of the text
+                        column(width=7,
+                               h6("Across Yemen, market vendors in both urban and rural areas are surveyed on a monthly basis. 
+                                  The JMMI tracks the prices of all items that comprise the WASH and Food Survival Minimum Expenditure Basket (SMEB) 
+                                  as well as other items. Field teams record prices for 10 non-food items (NFI) and WASH items, including: petrol, 
+                                  diesel, cooking gas, bottled water, treated water, trucked water, soap, laundry powder, sanitary napkins and bleach. 
+                                  In July 2020, at the request of the CMWG, REACH also integrated questions on food prices including: wheat flour, 
+                                  rice, dry kidney beans, canned kidney beans, lentils, vegetable oil, sugar, salt, potatoes and onions. 
+                                  Enumerators are instructed to record the price of the cheapest brand on offer in a given store or market stall. 
+                                  In addition to price levels, vendors are asked about their restocking times and supply challenges."),
+                               p(),
+                               h6("In each district, field teams collect at least three prices for each item, going to as many shops as needed to reach that number. 
+                                  District, governorate and national median prices are calculated using data from all assessed markets",p(),
+                                  tags$i(tags$strong("Findings are indicative for the assessed locations and timeframe in which the data was collected.")))),
                         
-                        column(width=7,h5("Data was collected through interviews with vendor Key Informants (KIs), 
-                                          selected by partner organizations from markets of various sizes in both 
-                                          urban and rural areas. To be assessed by the JMMI, markets must be either 
-                                          a single permanent market, or a local community where multiple commercial 
-                                          areas are located in close proximity to one another. When possible, markets/shops 
-                                          are selected within a single geographical location, where there is at least one 
-                                          wholesaler operating in the market, or multiple areas of commerce within the same 
-                                          geographical location when it is too small, to provide a minimum of three price 
-                                          quotations per assessed item. Findings are indicative for the assessed locations 
-                                          and timeframe in which the data was collected.",
-                        tags$i(tags$strong("Findings are indicative for the assessed locations and timeframe in which the data was collected.")))),
+                        column(width=8,h4("SMEB Calculation")), #h1- h5 change the header level of the text
                         
-                        column(width=8,h3("SMEB Calculation")), #h1- h5 change the header level of the text
+                        column(width=7,h6("REACH calculates the WASH SMEB, which is composed of four items: soap (1.05 kg), laundry powder (2 kg), 
+                                          sanitary napkins (5 packs of 10 units) and water trucking (3.15 m3). REACH also calculates the Food SMEB, 
+                                          which is composed of five items: wheat flour (75 kg), kidney beans (10 kg), vegetable oil (8 litres), sugar (2.5 kg), 
+                                          and iodized salt (1 kg). An estimation of the total SMEB is then calculated using two lumpsum amounts to account for 
+                                          cost of services, non-food items and shelter according to CMWG guidance note.")),
+
+                        column(width=8,h4("Help us collect data!")), #h1- h5 change the header level of the text
                         
-                        column(width=7,h5("Each month, enumerators conduct KI interviews with market vendors to collect three price quotations for each item in each district.
-                                          REACH calculates the WASH SMEB,
-                                          which is composed of four median item prices: Soap (1.05 kg), Laundry Powder (2 kg), Sanitary Napkins (5 units) ,and Water Trucking (3.15 m3).",
-                                          p(),
-                                          p("The calculation of the aggregated median price for districts and 
-                                          governorates is done following a stepped approach.
-                                          The median of all the price quotations collected is aggregated to 
-                                          calculate the district and the governorate median price.
-                                          Governorate medians are calculated using market level prices to keep 
-                                          granularity of data given the limited coverage of JMMI in Yemen. 
-                                          The final analysis is shared with the REACH Research & Data Unit at 
-                                          headquarters for review and validation."))),
+                        column(width=7,h6("The Joint Market Monitoring Initiative would not be possible without the help of +30 partners, who currently 
+                                          collect data or have collected data in the past. Participating organisations receive the data collection tools 
+                                          and trainings from REACH. Would  you like to participate? Contact us at ",
+                                          tags$a(href="mailto:jumana.albakheet@reach-initiative.org", "jumana.albakheet@reach-initiative.org"), ".")),
                         
-                        column(width=8,h3("Help us collect data!")), #h1- h5 change the header level of the text
+                        column(width=8,h4("About REACH")), #h1- h5 change the header level of the text
                         
-                        column(width=7,h5("The Joint-Marketing Initiative would not be possible without the help 
-                        of +30 partners, who currently collect data or have collected data in the past. The aim 
-                        is to incorporate as many districts of Yemen as possible into regular data collection cycle. 
-                        Partners wishing to participate in data collection identify the districts in which they are 
-                        able to consistently collect data throughout the coming months. Participating organisations 
-                        receive the data collection tools, and trainings on the JMMI methodology, from REACH. 
-                        Do you want to participate in the JMMI? Contact us at ",
-                                          tags$a(href="mailto:yemen@reach-initiative.org", "yemen@reach-initiative.org"))),
+                        column(width=7,h6("REACH is a joint initiative that facilitates the development of information tools and products that enhance the capacity of aid actors
+                                          to make evidence-based decisions in emergency, recovery and development contexts. By doing so, REACH contributes to ensuring that communities
+                                          affected by emergencies receive the support they need. All REACH activities are conducted in support to and within the framework of
+                                          inter-agency aid coordination  mechanisms. For more information, please visit our ",
+                                          a("REACH Website", target="_blank",    href="https://www.reach-initiative.org"), "or contact us directly
+                                          at ", tags$a(href="mailto:jumana.albakheet@reach-initiative.org", "jumana.albakheet@reach-initiative.org"), ".")),
                         
-                        column(width=8,h3("About REACH")), #h1- h5 change the header level of the text
-                        
-                        column(width=7,h5("REACH is a joint initiative that facilitates the development of
-                                          information tools and products that enhance the capacity of aid actors
-                                          to make evidence-based decisions in emergency, recovery and development
-                                          contexts. By doing so, REACH contributes to ensuring that communities
-                                          affected by emergencies receive the support they need. All REACH
-                                          activities are conducted in support to and within the framework of
-                                          inter-agency aid coordination  mechanisms. For more information, please
-                                          visit our",a("REACH Website", target="_blank",    href="https://www.reach-initiative.org"), "or contact us directly
-                                          at ", tags$a(href="mailto:yemen@reach-initiative.org", "yemen@reach-initiative.org"))),
-                        
-                        hr(),
-                        p(),
-                        p(),
-                        hr(),
-                        
-                        tags$div(id="cite4",
-                                 a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org")))
+                        tags$div(id="cite5", a(img(src='reach_logoInforming.jpg', width= "200px"), target="_blank", href="http://www.reach-initiative.org")))
              )
              
              # ,
@@ -1316,7 +1251,6 @@ ui <- fillPage( # tagList( before => if layout issue go back to this
              #### Partners Page ######################################################################
              
              # tabPanel("Partners",
-             # 
              #          #style=("{overflow-y:auto; }"),
              #          icon= icon("handshake"), #info-circle
              #          div(tags$head(
