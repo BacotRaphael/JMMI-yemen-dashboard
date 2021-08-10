@@ -65,6 +65,7 @@ March_2021 <-read_excel("37.REACH_YEM_Dataset_Joint Market Monitoring Initiative
 April_2021 <- read_excel("38.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_April 2021.xlsx", sheet = 3) %>% mutate(jmmi="April_2021")
 May_2021 <- read_excel("39.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May 2021.xlsx", sheet = 3) %>% mutate(jmmi="May_2021")
 June_2021 <- read_excel("40.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June 2021.xlsx", sheet = 3) %>% mutate(jmmi="June_2021")
+July_2021 <- read_excel("41.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_July 2021.xlsx", sheet = 3) %>% mutate(jmmi="July_2021")
 
 list_df = setNames(lapply(ls(), function(x) get(x)), ls())
 list_df_names <- names(list_df)
