@@ -450,7 +450,7 @@ data_latest <- full_data %>%                                                    
   dplyr::filter(Date == dates_max) %>%
   dplyr::select(-aor)
 
-# month_collected      <- paste0(format(dates_max, "%B"), " ",format(dates_max, "%Y"))                      # define overview of last round
+month_collected      <- paste0(format(dates_max, "%B"), " ",format(dates_max, "%Y"))                      # define overview of last round
 shops_covered        <- nrow(data_latest)
 districts_covered    <- n_distinct(data_latest$District, na.rm = FALSE)
 governorates_covered <- n_distinct(data_latest$Governorate, na.rm = FALSE)
@@ -1359,8 +1359,6 @@ server <- function(input, output, session) {
    #    do.call(tagList, logo.table)
    #  })
     
-  
-  
   output$map_home <- renderLeaflet({
     map_home <- leaflet(options = leafletOptions(attributionControl=FALSE, zoomControl = FALSE, dragging = FALSE, minZoom = 1, maxZoom = 12)) %>%
       setView(lng = 49, lat = 17, zoom = 7) %>%
