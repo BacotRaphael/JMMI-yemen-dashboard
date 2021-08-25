@@ -226,9 +226,9 @@ currentD <- as.character(format(max(Admin1table$date2),"%B %Y"))                
 
 # Districts
 Admin2table_p <- Admin2data %>% mutate_at(vars(-matches("date|aor|government|district")), ~ round(as.numeric(.)), 0) %>%
-  mutate(date2 = as.Date(as.yearmon(date)), .before=1)
+  dplyr::mutate(date2 = as.Date(as.yearmon(date)), .before=1)
 col.exclude <- c("jmmi|Date|aor|Governorate|government_ID|District|district_ID") # coverage
-admin2coverage <- full_data %>% group_by(Date, district_ID) %>% mutate_at(vars(-matches(col.exclude)), ~ sum(!is.na(.))) %>% rename_at(vars(-matches(col.exclude)), ~paste0("n_",.)) %>%
+admin2coverage <- full_data %>% group_by(Date, district_ID) %>% summarise_at(vars(-matches(col.exclude)), ~ sum(!is.na(.))) %>% rename_at(vars(-matches(col.exclude)), ~paste0("n_",.)) %>%
   rowwise() %>%
   dplyr::mutate(n_SMEB = ifelse(min(c_across(paste0("n_", smeb.items)))>0, mean(c_across(paste0("n_", smeb.items))) %>% round(1), 0),
                 n_WASH_SMEB = ifelse(min(c_across(paste0("n_", wash.smeb.items)))>0, mean(c_across(paste0("n_", wash.smeb.items))) %>% round(1), 0),
@@ -307,7 +307,7 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
 ## DROP DOWN MENU SELECTIONS for Plot & Data Explorer + map parameters
 
 ## A. Code below to produce the base for the indicator list. Should be commented unless you lost the original file for some reason.
-# vars <- c("SMEB"="SMEB", "SMEB Water"="WASH_SMEB", "SMEB Food"="Food_SMEB",
+# vars <- c("SMEB"="SMEB", "SMEB Water"="WASH_SMEB", "SMEB Food"="Food_SMEB","Daily wage"="daily_wage_rate",
 #           "Parallel Exchange Rates"="exchange_rates",
 #           "Wheat Flour" = "wheat_flour", "Rice" = "rice", "Dry Beans" = "beans_dry", "Canned Beans" = "beans_can", "Lentils" = "lentil",
 #           "Vegetable Oil" = "vegetable_oil", "Sugar" = "sugar", "Salt" = "salt", "Potato" = "potato", "Onion" = "onion",
@@ -325,10 +325,16 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
 #                   "mrk_increse_water_50"="If the demand for water trucking were to increase by 50%, would you be able to respond to this increase?",
 #                   "mrk_supply_issues.dmg_storage"="Supply issues: Destruction/damage to storage capacity",
 #                   "mrk_supply_issues.move_restriction"="Supply issues: Movement restrictions (check points, curfews, roadblocks, etc)",
-#                   "mrk_supply_routes"="Have supply routes changed in a way harmful to your business in the past 30 days?")
+#                   "mrk_supply_routes"="Have supply routes changed in a way harmful to your business in the past 30 days?",
+#                   "water_chlorinated"="Is the water from water trucking chlorinated?",
+#                   "distance_price"="Do you charge different prices depending on the distance you must travel to deliver water?",
+#                   "additional_cost_5"="For an order of 5 km for the full truck, what is the additional cost of delivery? (in YER)",
+#                   "additional_cost_10"="For an order of 10 km for the full truck, what is the additional cost of delivery? (in YER)",
+#                   "additional_cost_20"="For an order of 15 km for the full truck, what is the additional cost of delivery? (in YER)",
+#                   "additional_cost_30"="For an order of 20 km for the full truck, what is the additional cost of delivery? (in YER)")
 # names_vars_functionnality <- stringr::str_replace_all(vars_functionnality, replace.name) %>% gsub("_", " ", .) %>% gsub("sell", "% of vendors selling",.)
 # n_mkt_fun <- length(vars_functionnality)
-# title.legend <- c("SMEB Cost", "WASH SMEB Cost", "Food SMEB Cost",
+# title.legend <- c("SMEB Cost", "WASH SMEB Cost", "Food SMEB Cost", "Daily wage (YER)",
 #                   "YER to 1 USD",
 #                   "Price (1 Kg)", "Price (1 Kg)", "Price (10 Pack)", "Price (15oz can)","Price (1 Kg)",
 #                   "Price (1 L)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)", "Price (1 Kg)",
@@ -336,8 +342,8 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
 #                   "Price (0.75 L)", "Price (10 L)", "Price (18.8kg)",
 #                   "Price (100 g)", "Price (100 g)", "Price (10 Pack)", "Price (Cubic m)", "Price (1 L)",
 #                   rep("	% of traders", n_mkt_fun))
-# unit <- c(rep(" YER", 24), rep(" %", n_mkt_fun))
-# indicator_group <- c(rep("I. Indices", 3),
+# unit <- c(rep(" YER", 25), rep(" %", n_mkt_fun))
+# indicator_group <- c(rep("I. Indices", 4),
 #                      "II. Currencies",
 #                      rep("III. Food items", 10),
 #                      rep("IV. Fuels", 2),
@@ -354,7 +360,10 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
 #                              Variable=variables,
 #                              Group = indicator_group,
 #                              Legend = title.legend,
-#                              Unit = unit)
+#                              Unit = unit) %>%
+#   mutate(Legend=ifelse(str_detect(Variable, "additional_cost"), "Cost (YER)", Legend),
+#          Unit=ifelse(str_detect(Variable, "additional_cost"), "YER", Unit))
+# indicator_list %>% write.xlsx("indicator_list_out.xlsx")
 
 ## B. Import the indicator list which maps variable names with label names, category and unit for layout in the dashboard
 # If you have a new item, update it in the file before running the line below.
@@ -394,9 +403,9 @@ dates_max_1y <- as.POSIXlt(dates_max)                                           
 dates_max_1y$year <- dates_max_1y$year-1
 dates_max_1y <- as.Date(dates_max_1y)
 
-# Prepare tables for dashboard tab [under construction]
+# Prepare tables for dashboard tab
 prices_country <- prices %>%                                                      # aggregate price data at country level
-  dplyr::select(-Governorate, -District) %>%
+  dplyr::select(-Governorate, -District, -matches("^n_")) %>%
   dplyr::select(Date:num_obs, matches("SMEB"), -num_obs) %>%
   dplyr::group_by(Date) %>%
   dplyr::summarise_all(median, na.rm = TRUE)
@@ -431,22 +440,22 @@ prices_changes <- prices_country_long %>%                                       
   dplyr::select(-Item) %>% dplyr::rename(Item=Item.y) %>% dplyr::relocate(Item, .before=1)
 
 prices_changes_items <- prices_changes %>%
-  dplyr::filter(!(str_detect(Item, "^SMEB") | Item == "Parallel Exchange Rates"))
+  dplyr::filter(!str_detect(Item, "SMEB|Parallel Exchange Rates|Daily wage"))
 
 prices_changes_meb <- prices_changes %>% 
-  dplyr::filter(str_detect(Item, "SMEB") | str_detect(Item, "Parallel Exchange Rates")) %>%
-  dplyr::arrange(Group, Item) %>% dplyr::mutate(Item=gsub("Parallel Exchange Rates","US dollar (1 USD)", Item))
+  dplyr::filter(str_detect(Item, "SMEB|Parallel Exchange Rates|Daily wage")) %>%
+  dplyr::arrange(Group, desc(Item)) %>% dplyr::mutate(Item=gsub("Parallel Exchange Rates","US dollar (1 USD)", Item))
 
 data_latest <- full_data %>%                                                                                   # latest dataset for download on dashboard page
   dplyr::filter(Date == dates_max) %>%
   dplyr::select(-aor)
 
-month_collected      <- paste0(format(dates_max, "%B"), " ",format(dates_max, "%Y"))                      # define overview of last round
+# month_collected      <- paste0(format(dates_max, "%B"), " ",format(dates_max, "%Y"))                      # define overview of last round
 shops_covered        <- nrow(data_latest)
 districts_covered    <- n_distinct(data_latest$District, na.rm = FALSE)
 governorates_covered <- n_distinct(data_latest$Governorate, na.rm = FALSE)
-overview_round       <- data.frame(figure = c("Month", "Traders interviewed", "Districts covered", "Governorates covered"),
-                                   value  = c(month_collected, shops_covered, districts_covered, governorates_covered))
+overview_round       <- data.frame(figure = c("Traders interviewed", "Districts covered", "Governorates covered"),
+                                   value  = c(shops_covered, districts_covered, governorates_covered))
 
 table_round <- overview_round %>%                                                                         # style overview table
   kbl(escape = F, format.args = list(big.mark = ","), align = "lr", col.names = NULL) %>%
@@ -566,15 +575,15 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = as.character(ver.anchor), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "220",
+                            top = as.character(ver.anchor), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "250",
                             h4(paste0("Key Figures", " (", format(dates_max, "%b"), " ", format(dates_max, "%Y"), ")")),
                             HTML(table_changes_meb), br()
                           ),
                           
                           absolutePanel(
                             id = "home", class = "panel panel-default", fixed = FALSE, draggable = FALSE,
-                            top = as.character(ver.anchor+235), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "185",
-                            h4("Latest Round"),
+                            top = as.character(ver.anchor+265), left = as.character(left+415), right = "auto", bottom = "auto", width = "340", height = "155",
+                            h4("Latest Round Coverage"),
                             HTML(table_round), br()
                           ),
                           
@@ -587,7 +596,7 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
                                            paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " dataset           ")),
                             br(),
                             p(h4("Download the Situation Overview:")),
-                            p(h5(tags$a(href="https://www.impact-repository.org/document/repository/0fd12aaf/REACH_YEM_JMMI_Situation-Overview_June-2021.pdf",
+                            p(h5(tags$a(href="https://www.impact-repository.org/document/reach/e619a6e3/REACH_YEM_Situation-Overview_-Joint-Market-Monitoring-Initiative-JMMI_July2021.pdf",
                                      paste0("JMMI Situation Overview ", month_collected)))),
                             # downloadButton("downloadFactsheet", style = "font-size: 12px",
                             #                paste0("Download ", format(dates_max, "%B"), " ", format(dates_max, "%Y"), " situation overview")),
@@ -1388,9 +1397,9 @@ server <- function(input, output, session) {
   
   # "observe" inputs to define variables for map colors, titles, legends and subset district data
   observe({
-    # date_map_selected <- dates[33]
+    # date_map_selected <- dates[38]
     # VARIA <- "SMEB"
-    # VARIA <- "exchange_rates"
+    # VARIA <- "daily_wage_rate"
     # date_map_selected <- dates_max
     # VARIA = "Food_SMEB"
     
@@ -1513,9 +1522,10 @@ server <- function(input, output, session) {
   chartData1 <- reactive({  #subset JMMI data table based on variable of interest (soap, water etc)
     metacol <- c("date", "government_name.x",  "government_ID.x", "district_name", "district_ID")
     var <- indicator_list[indicator_list$Item==input$variable1, "Variable"]
-    # var="WASH_SMEB"
+    # var="daily_wage_rate"
     # clicked_state<-"YE1514"
     # state_data <- right_join(Admin2table[Admin2table$district_ID==clicked_state,], right_join(Admin1table[Admin1table$government_ID==substr(clicked_state,1,4),], AdminNatTable, by = "date2"), by = "date2")
+    # r <- state_data %>% dplyr::select(all_of(metacol), var, "date2", starts_with(paste0(var,".")), contains("num_obs"))
     r <- state_data() %>% dplyr::select(all_of(metacol), var, "date2", starts_with(paste0(var,".")), contains("num_obs"))
     colnames(r) <- c("date","government_name","government_ID","district_name","district_ID","variableSEL","date2","governorate_val","nat_val","dist_obs","gov_obs","nat_obs")
     r
@@ -1557,6 +1567,8 @@ server <- function(input, output, session) {
   #building the table for the observations and prices
   #BUILDING TABLE  https://stackoverflow.com/questions/32149487/controlling-table-width-in-shiny-datatableoutput
   output$out_table_obs<-DT::renderDataTable({
+    # ChartDat_Date<-r
+    # ChartDat_Date_filter<-ChartDat_Date %>% filter(date==dates_max)
     ChartDat_Date<-chartData1()                                                 # make a new dataset to play around with from the original state data one above // # https://stackoverflow.com/questions/40152857/how-to-dynamically-populate-dropdown-box-choices-in-shiny-dashboard
     ChartDat_Date_filter<-ChartDat_Date%>%                                      # filter out based on what was selected from the varDateSelect
       dplyr::filter(date == input$varDateSelect)
