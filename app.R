@@ -163,6 +163,9 @@ full_data <- read.csv("data/data_all.csv") %>%
   dplyr::rename(Date=date, Governorate=government_name, District=district_name) %>%
   dplyr::mutate(Date=as.Date(as.yearmon(Date))) 
   
+## import names label for full dataset
+indicator_list_full <- read.xlsx("indicator_list.xlsx", sheet = 2)
+
 # Full database for data explorer at district level + Plot tab
 indicators <- read.csv("data/data_market_functionnality.csv") %>%
   dplyr::select(-matches("X|country|district_au|cash_feasibility|market_|_source|exchange_rate_|type_market|_other|infra"), -ends_with("mrk_supply_issues"), -ends_with("other"), -ends_with("not_answer")) %>%
@@ -368,7 +371,7 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
 ## B. Import the indicator list which maps variable names with label names, category and unit for layout in the dashboard
 # If you have a new item, update it in the file before running the line below.
 # Add the new item as a new row in the excel file in the corresponding order as you want it to appear in the drop down list in the dashboard.
-indicator_list <- read.xlsx("indicator_list.xlsx")
+indicator_list <- read.xlsx("indicator_list.xlsx", sheet = 1)
 indicator_group <- indicator_list$Group 
 
 ## Setting custom maps color palettes for all items:
@@ -398,6 +401,10 @@ dates <- sort(unique(Admin2table$date2))                                        
 dates_min  <- as.Date("2020-01-01")                                             # set minimum date to be displayed
 dates_max  <- max(Admin2table$date2, na.rm = T)                                 # maximum date in data
 dates_max2 <- sort(unique(Admin2table$date2), decreasing=T)[2]                  # second-latest date
+dates.non.na <- Admin2table %>% dplyr::select(-any_of(c("date", "aor")), -matches("government|district")) %>%
+  tidyr::pivot_longer(2:ncol(.)) %>% dplyr::group_by(date2, name) %>%
+  dplyr::mutate(value=paste(unique(value), collapse=";"), is.na=ifelse(value=="NA", T, F)) %>% dplyr::filter(is.na) %>% dplyr::distinct() %>%
+  dplyr::left_join(indicator_list %>% dplyr::select(Item, Variable), by=c("name"="Variable"))
 
 dates_max_1y <- as.POSIXlt(dates_max)                                             # most recent month minus 1 year
 dates_max_1y$year <- dates_max_1y$year-1
@@ -832,7 +839,9 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
                                                         "Month:",
                                                         force_edges = TRUE,
                                                         choices = dates,
-                                                        selected = dates_max,
+                                                        selected = dates_max, 
+                                                        # choices = dates.non.na %>% filter(name==input$variable1) %>% pull(date2),
+                                                        # selected = non.na.dates[length(non.na.dates)],
                                                         animate = TRUE
                                         ),
                                         
@@ -936,9 +945,11 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
                           conditionalPanel(condition = "input.plot_aggregation == 'District' & input.plot_by_district_item == 'District'",
                                            pickerInput("select_bydistrict_item",
                                                        label = "Item:",
+                                                       # choices = lapply(split(indicator_list$Item, indicator_list$Group), as.list)[1:6],
                                                        choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list)[1:6],
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
                                                        selected = "Food_SMEB",
+                                                       choicesOpt = list(content = indicator_list$Item2),
                                                        multiple = FALSE
                                            )
                           ),
@@ -956,9 +967,11 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
                           conditionalPanel(condition = "input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Governorate'",
                                            pickerInput("select_bygovernorate_item",
                                                        label = "Item:",
+                                                       # choices = lapply(split(indicator_list$Item, indicator_list$Group), as.list)[1:6],
                                                        choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list)[1:6],
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
                                                        selected = "Food_SMEB",
+                                                       choicesOpt = list(content = indicator_list$Item2),
                                                        multiple = FALSE
                                            )
                           ),
@@ -966,9 +979,11 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
                           conditionalPanel(condition = "input.plot_aggregation == 'Country' | (input.plot_aggregation == 'Governorate' & input.plot_by_governorate_item == 'Item') | (input.plot_aggregation == 'District' & input.plot_by_district_item == 'Item')",
                                            pickerInput("select_byitem_item",
                                                        label = "Item(s):",
+                                                       # choices = lapply(split(indicator_list$Item, indicator_list$Group), as.list)[1:6],
                                                        choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list)[1:6],
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
                                                        selected = c("SMEB", "Food_SMEB", "WASH_SMEB"),
+                                                       choicesOpt = list(content = indicator_list$Item2),
                                                        multiple = TRUE
                                            )
                           ),
@@ -1104,8 +1119,10 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
                                            pickerInput("table_show_vars",
                                                        label = "Indicators:",
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
+                                                       # choices = lapply(split(indicator_list$Item, indicator_list$Group), as.list),
                                                        choices = lapply(split(indicator_list$Variable, indicator_list$Group), as.list),
                                                        selected = c("WASH SMEB", "Food SMEB", "Parallel Exchange Rates"),
+                                                       choicesOpt = list(content = indicator_list$Item2),
                                                        multiple = TRUE
                                            )
                           ),
@@ -1114,6 +1131,7 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
                                            pickerInput("table_show_vars_ki",
                                                        label = "Indicators:",
                                                        choices = names(full_data)[!names(full_data) %in% "aor"],
+                                                       # choices = names(full_data)[!names(full_data) %in% "aor"],
                                                        options = list(title = "Select", `actions-box` = TRUE, `live-search` = TRUE),
                                                        selected = names(full_data)[1:3],
                                                        multiple = TRUE
@@ -1407,7 +1425,7 @@ server <- function(input, output, session) {
     metacol2 <- c("num_obs", "date2")
     dataM_all <- Rshp[,c(metacol, VARIA, metacol2, paste0("n_", VARIA))]        # subset VARIA column
     dataM <- dataM_all[dataM_all@data$date2==date_map_selected,]                # filter for the selected date 
-    
+
     all.na <- sum(is.na(dataM@data[,VARIA]))==nrow(dataM@data)                  # flag when all values are NAs for this date
     pal_domain <- if (all.na){c(0,1)} else {dataM@data[,VARIA]}                 # adapt the palette domain
     mypal <- colorNumeric(palette = indicator_list[indicator_list$Variable==VARIA, "Palette"][[1]],
@@ -1475,7 +1493,7 @@ server <- function(input, output, session) {
     
     map1 %>%                                                                    # add legend for var 
       execute_if(!all.na, 
-                 addLegend_decreasing("bottomleft", pal = mypal, values =  dataM@data[,6], # update legend to reflect changes in selected district/variable shown
+                 addLegend_decreasing("bottomleft", pal = mypal, values =  dataM@data[,6], na.label = "No data",# update legend to reflect changes in selected district/variable shown
                                       labFormat=labelFormat(suffix=unitA), title = title_legend, opacity = 5, decreasing = T)) %>%
       addScaleBar("bottomleft", options = scaleBarOptions(maxWidth = 100, metric = T, imperial = T, updateWhenIdle = T)) # add scale bar
     
@@ -1738,7 +1756,7 @@ server <- function(input, output, session) {
       reshape2::melt("date2")%>%
       reshape2::dcast(variable ~ date2)%>%
       round_df(.,0) %>% dplyr::select(variable, as.character(month_list))
-
+    
     col_data_pull <- ncol(national_data_pull)
     name_perc_change<-paste0(colnames(national_data_pull[col_data_pull]),
                              " percent change from standard SMEB")
@@ -1753,15 +1771,27 @@ server <- function(input, output, session) {
     columns_of_data_begin <- ncol(national_data_pull)+1
     percent_col <- time+2                                                       # get the column number of the percent change for future formatting
     col_format_last <- time+1
+    
+    national_data_pull <- national_data_pull %>%
+      dplyr::mutate_at(., .vars = c(3:ncol(.)), .funs = list('change' = ~(((national_data_pull[,2])-.)/(.)))) %>%
+      dplyr::rename_at(vars(contains("_change")), ~paste0("% change between ", ., " and ",  month_list[1])) %>% 
+      setNames(gsub("_change", "", colnames(.)))
+    
     columns_of_data_end <- ncol(national_data_pull)                             # get number of columns now we will use later in the formatting of the table
     names(national_data_pull) <- gsub("_", " ", names(national_data_pull))      # get rid of the weird naming from the mutate_at
-
+    
     #Render the output DT
     #https://stackoverflow.com/questions/60659666/changing-color-for-cells-on-dt-table-in-shiny
     #https://blog.rstudio.com/2015/06/24/dt-an-r-interface-to-the-datatables-library/
     DT::datatable(national_data_pull,extensions = c('FixedColumns'), 
                   options = list(searching = F, paging = F, scrollX=T, fixedColumns = list(leftColumns = 1, rightColumns = 0)),
-                  rownames = F)
+                  rownames = F) %>%
+      formatStyle(columns = 1, color = "white", backgroundColor = "grey", fontWeight = "bold") %>%
+      DT::formatPercentage(columns = c(columns_of_data_begin:columns_of_data_end),2) %>%
+      formatStyle(columns = c(columns_of_data_begin:columns_of_data_end),
+                  color = styleInterval(c(-percent_time,percent_time), c('grey', 'black','white')),
+                  backgroundColor = styleInterval(c(-percent_time,percent_time), c('#66FF66', 'white','#FA5353')),
+                  fontWeight = styleInterval(c(-percent_time,percent_time),c('bold','normal','bold')))
 
   })
 
@@ -1769,11 +1799,16 @@ server <- function(input, output, session) {
   
   # For District level data
   table_datasetInput1 <- reactive({
-    data %>% dplyr::filter(
-      is.null(input$table_district) | District %in% input$table_district,
-      date2 >= input$table_date_select[1] & date2 <= input$table_date_select[2]
-    ) %>%
-      dplyr::select("date2", "Governorate", "District", input$table_show_vars)
+    data %>%
+      dplyr::filter(
+        is.null(input$table_district) | District %in% input$table_district,
+        date2 >= input$table_date_select[1] & date2 <= input$table_date_select[2]
+        ) %>% 
+      dplyr::select("Date", "Governorate", "District", input$table_show_vars) %>%
+      stats::setNames(
+        stringr::str_replace_all(colnames(.), setNames(indicator_list_full$Item, paste0("^",indicator_list_full$Variable,"$"))) %>%
+          gsub("\\^|\\$", "", .)
+        )
   })
   # For KII data
   table_datasetInput2 <- reactive({
@@ -1781,7 +1816,11 @@ server <- function(input, output, session) {
       is.null(input$table_district) | District %in% input$table_district,
       Date >= input$table_date_select[1] & Date <= input$table_date_select[2]
       ) %>%
-      dplyr::select(Date, Governorate, District, input$table_show_vars_ki)
+      dplyr::select(Date, Governorate, District, input$table_show_vars_ki) %>%
+      stats::setNames(
+        stringr::str_replace_all(colnames(.), setNames(indicator_list_full$Item, paste0("^",indicator_list_full$Variable,"$"))) %>%
+          gsub("\\^|\\$", "", .)
+        )
     })
 
   table_datasetInput <- reactive({
@@ -1838,6 +1877,19 @@ server <- function(input, output, session) {
   })
 
   plot_item_select <- reactive({
+    # input <- data.frame(
+    #   select_byitem_item = I(list("SMEB Food","For an order of 10 km for the full truck, what is the additional cost of delivery? (in YER)")),
+    #   select_bydistrict_item = I(list("SMEB Food","For an order of 10 km for the full truck, what is the additional cost of delivery? (in YER)")),
+    #   select_bygovernorate_item = list("SMEB Food","For an order of 10 km for the full truck, what is the additional cost of delivery? (in YER)")
+    # )
+    # item_select_byitem_item <- input$select_byitem_item
+    # item_select_bydistrict_item <- input$select_bydistrict_item
+    # item_select_bygovernorate_item <- input$select_bygovernorate_item
+    # var_select_byitem_item <- indicator_list %>% filter(Item==item_select_byitem_item) %>% pull(Variable)
+    # var_select_bydistrict_item <- indicator_list %>% filter(Item==item_select_bydistrict_item) %>% pull(Variable)
+    # var_select_bygovernorate_item <- indicator_list %>% filter(Item==item_select_bygovernorate_item) %>% pull(Variable)
+    # if (input$plot_aggregation == 'Country' | (input$plot_aggregation == 'Governorate' & input$plot_by_governorate_item == 'Item') | (input$plot_aggregation == 'District' & input$plot_by_district_item == 'Item')) {var_select_byitem_item} else if (input$plot_aggregation == 'District' & input$plot_by_district_item == 'District') {var_select_bydistrict_item} else {var_select_bygovernorate_item}
+    # if (input$plot_aggregation == 'Country' | (input$plot_aggregation == 'Governorate' & input$plot_by_governorate_item == 'Item') | (input$plot_aggregation == 'District' & input$plot_by_district_item == 'Item')) {indicator_list[indicator_list$Item==input$select_byitem_item, "Variable"]} else if (input$plot_aggregation == 'District' & input$plot_by_district_item == 'District') {indicator_list[indicator_list$Item==input$select_bydistrict_item, "Variable"]} else {indicator_list[indicator_list$Item==input$select_bygovernorate_item, "Variable"]}
     if (input$plot_aggregation == 'Country' | (input$plot_aggregation == 'Governorate' & input$plot_by_governorate_item == 'Item') | (input$plot_aggregation == 'District' & input$plot_by_district_item == 'Item')) {input$select_byitem_item} else if (input$plot_aggregation == 'District' & input$plot_by_district_item == 'District') {input$select_bydistrict_item} else {input$select_bygovernorate_item}
   })
 
@@ -1886,7 +1938,7 @@ server <- function(input, output, session) {
         hc_yAxis(min = 0, title = list(text = "Price (in YER)")) %>%
         hc_exporting(
           enabled = TRUE,
-          filename = paste0("IRQ-JPMI-boxplot_export-", Sys.Date()),
+          filename = paste0("YEM-JMMI-boxplot_export-", Sys.Date()),
           buttons = list(
             contextButton = list(
               menuItems = list("downloadPNG", "downloadPDF", "downloadCSV")
@@ -1928,7 +1980,7 @@ server <- function(input, output, session) {
       hc_colors(cols) %>%
       hc_exporting(
         enabled = TRUE,
-        filename = paste0("IRQ-JPMI-linegraph_export-", Sys.Date()),
+        filename = paste0("YEM-JMMI-linegraph_export-", Sys.Date()),
         buttons = list(contextButton = list(menuItems = list("downloadPNG", "downloadPDF", "downloadCSV"))),
         sourceWidth = 1000,
         sourceHeight = 600
@@ -1954,6 +2006,5 @@ server <- function(input, output, session) {
   })
 
 }
-
 
 shinyApp(ui, server)

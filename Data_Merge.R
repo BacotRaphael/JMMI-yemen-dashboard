@@ -66,6 +66,7 @@ April_2021 <- read_excel("38.REACH_YEM_Dataset_Joint Market Monitoring Initiativ
 May_2021 <- read_excel("39.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May 2021.xlsx", sheet = 3) %>% mutate(jmmi="May_2021")
 June_2021 <- read_excel("40.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June 2021.xlsx", sheet = 3) %>% mutate(jmmi="June_2021")
 July_2021 <- read_excel("41.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_July 2021.xlsx", sheet = 3) %>% mutate(jmmi="July_2021")
+August_2021 <- read_excel("42.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_August 2021.xlsx", sheet = 3) %>% mutate(jmmi="August_2021")
 
 list_df = setNames(lapply(ls(), function(x) get(x)), ls())
 list_df_names <- names(list_df)
@@ -99,17 +100,10 @@ source("./other scripts/full_modes.R") # pull in the full modes script
 
 ################then begin the ananlysis of the files######################
 
-#get rid of all districts that have less than three observation   => should we consider 2? as coverage very limited
-data_all_JMMI <- data_all_JMMI %>%
-                        dplyr::group_by(jmmi, district_id)%>%
-                        filter(n()>2)%>%
-                        as_tibble()
+# get rid of all districts that have less than three surveys
+data_all_JMMI <- data_all_JMMI %>% dplyr::group_by(jmmi, district_id) %>% filter(n()>2) %>% as_tibble()
 
-#make the JMMI column act as a date column and begin to sort by that, will be important for when you want to do that national by the previous month
-# data_all_JMMI$jmmi<-gsub("_"," ", data_all_JMMI$jmmi)
-#this is the actual date that will be sorted by with in the server script
-# data_all_JMMI$jmmi_date_old <- as.character(as.Date(as.yearmon(as.character(data_all_JMMI$jmmi))))
-date_list<-sort(unique(data_all_JMMI$jmmi_date))
+date_list <- sort(unique(data_all_JMMI$jmmi_date))
 metacol <- c("aor", metacol)
 
 # Selects all market functionality indicators
