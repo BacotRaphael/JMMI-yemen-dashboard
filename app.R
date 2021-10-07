@@ -278,11 +278,11 @@ Rshp <- sp::merge(x=Admin2,y=Admin2table, by.x="admin2pcod", by.y= "district_ID"
 Rshp <- Rshp[!is.na(Rshp$date2),]                                               # filter out NAs date
 
 Rshp <- st_simplify(st_as_sf(Rshp), dTolerance = 0.5)
-Rshp <- st_transform(x = Rshp, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+Rshp <- st_transform(x = Rshp, crs = "+proj=longlat +ellps=WGS84 +no_defs")
 Rshp <- as(Rshp,"Spatial")
 
 Admin1 <- st_simplify(st_as_sf(Admin1), dTolerance = 0.5)
-Admin1 <- st_transform(x = Admin1, crs = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+Admin1 <- st_transform(x = Admin1, crs = "+proj=longlat +ellps=WGS84 +no_defs")
 Admin1 <- as(Admin1,"Spatial")
 
 ##-------------------------- CREATE MAP LABELS ----------------------
@@ -307,6 +307,9 @@ cols      <- c("rgb(238,88,89)",   "rgb(88,88,90)",    "rgb(165,201,161)",      
                "rgb(210,228,208)", "rgb(171,217,230)", "rgb(251,207,176)",
                "rgb(255,251,189)", "rgb(233,229,220)")
 
+
+
+#################  Import indicator list with all labels for app #################
 ## DROP DOWN MENU SELECTIONS for Plot & Data Explorer + map parameters
 
 ## A. Code below to produce the base for the indicator list. Should be commented unless you lost the original file for some reason.
@@ -525,6 +528,8 @@ partners.past <- partners %>% filter(active==0) %>%
 #  mutate(group = c(rep(0,9), rep(1,8), rep(2, 7), rep(3, nrow(.)-(9+8+7)))) %>%
 #  split(., .$group)                                                              # split partners logo file according to image size to fit box
 
+
+############ UI ######################################################
 # UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI UI
 
 ui <- tagList( # fillPage( before => if layout issue go back to this
@@ -1330,6 +1335,7 @@ ui <- tagList( # fillPage( before => if layout issue go back to this
   ,
   id = "tabset") ## defining id tabset for observeEvent for the leafletProxy
 )
+
 
 
 #### Server ######################################################################
