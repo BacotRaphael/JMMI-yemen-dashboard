@@ -9,10 +9,12 @@ harmonise.df <- function(df){
   colnames(df) <- sub(".*?sell_", "sell_", colnames(df))
   colnames(df) <- sub(".*?supply_information/", "", colnames(df))
   colnames(df) <- sub("info/date_survey|date_survey", "date", colnames(df))
+  colnames(df) <- sub("water_trucking_rates_by_distance/|^water_trucking_service_information_001/|^water_trucking_service_information/", "", colnames(df))
+  colnames(df) <- gsub("^quantity_price_wage$", "daily_wage_rate", colnames(df))
   df <- df %>% 
     map_if(is.factor, as.character) %>%
     as_tibble%>%
-    mutate_at(vars(matches("calc|exchange|cost")), as.numeric) %>%
+    mutate_at(vars(matches("calc|exchange|cost|daily_wage_rate")), as.numeric) %>%
     mutate(jmmi_date = as.character(as.Date(as.yearmon(as.character(gsub("_", " ", jmmi))))),
            date = if ("date" %in% colnames(df)) ifelse(!is.na(date), date, jmmi_date) else {jmmi_date}) # Finish this mess to get date cleaned.
   return(df)

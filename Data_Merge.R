@@ -66,6 +66,7 @@ April_2021 <- read_excel("38.REACH_YEM_Dataset_Joint Market Monitoring Initiativ
 May_2021 <- read_excel("39.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_May 2021.xlsx", sheet = 3) %>% mutate(jmmi="May_2021")
 June_2021 <- read_excel("40.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_June 2021.xlsx", sheet = 3) %>% mutate(jmmi="June_2021")
 July_2021 <- read_excel("41.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_July 2021.xlsx", sheet = 3) %>% mutate(jmmi="July_2021")
+August_2021 <- read_excel("42.REACH_YEM_Dataset_Joint Market Monitoring Initiative (JMMI)_August 2021.xlsx", sheet = 3) %>% mutate(jmmi="August_2021")
 
 list_df = setNames(lapply(ls(), function(x) get(x)), ls())
 list_df_names <- names(list_df)
@@ -76,8 +77,8 @@ source("other scripts/utils.R")                                                 
 list_df <- lapply(list_df, harmonise.df)
 df <- do.call("rbind.fill", list_df)                                            # Trying to rbind.fill all of dataset to keep market functionality questions
 
-col_price <- colnames(df)[grepl("^calc_*|cost_cubic_meter|exchange_rate_result\\b|fuel_gov_origin|wash_gov_origin|food_gov_origin", colnames(df))]
-col_mkt_functionnality <- colnames(df)[grepl("mrk|market|sell_|cash_feasibility|COVID", colnames(df))]
+col_price <- colnames(df)[grepl("^calc_*|cost_cubic_meter|exchange_rate_result\\b|fuel_gov_origin|wash_gov_origin|food_gov_origin|daily_wage_rate", colnames(df))]
+col_mkt_functionnality <- colnames(df)[grepl("mrk|market|sell_|cash_feasibility|COVID|water_chlorinated|distance_price$|additional_cost_", colnames(df))]
 metacol <- colnames(df)[grepl("jmmi|jmmi_date|^country_|^governorate_*|^district_*", colnames(df))]
 
 data_all_JMMI <- df %>% dplyr::select(-district_name, -governorate_id, -governorate_name) %>% # Rename dataframe to fit rest of the code - Get rid of all other meta columns to only keep streamlined pcodes 
@@ -99,17 +100,10 @@ source("./other scripts/full_modes.R") # pull in the full modes script
 
 ################then begin the ananlysis of the files######################
 
-#get rid of all districts that have less than three observation   => should we consider 2? as coverage very limited
-data_all_JMMI <- data_all_JMMI %>%
-                        dplyr::group_by(jmmi, district_id)%>%
-                        filter(n()>2)%>%
-                        as_tibble()
+# get rid of all districts that have less than three surveys
+data_all_JMMI <- data_all_JMMI %>% dplyr::group_by(jmmi, district_id) %>% filter(n()>2) %>% as_tibble()
 
-#make the JMMI column act as a date column and begin to sort by that, will be important for when you want to do that national by the previous month
-# data_all_JMMI$jmmi<-gsub("_"," ", data_all_JMMI$jmmi)
-#this is the actual date that will be sorted by with in the server script
-# data_all_JMMI$jmmi_date_old <- as.character(as.Date(as.yearmon(as.character(data_all_JMMI$jmmi))))
-date_list<-sort(unique(data_all_JMMI$jmmi_date))
+date_list <- sort(unique(data_all_JMMI$jmmi_date))
 metacol <- c("aor", metacol)
 
 # Selects all market functionality indicators
@@ -231,11 +225,12 @@ district_final_pct_change <- dplyr::full_join(district_all_pct_change,district_o
 governorate_final_pct_change <- dplyr::full_join(governorate_all_alone_pct_change,governorate_obs_pct_change, by = c("governorate_id", "jmmi")) %>% dplyr::select(-starts_with("district"))
 national_final_pct_change <- dplyr::full_join(national_all_pct_change,national_obs_pct_change, by = c("country_id", "jmmi")) %>% dplyr::select(-starts_with("district"), -starts_with("governorate"))
 
-# Rename and reorder all variables to fit with google sheets templates
+# Rename and reorder all price variables to fit with google sheets templates
+## WARNING IF YOU WANT TO ADD A NEW PRICE INDICATOR, Add it here to col_price_raw and col_price_final at the same place (at the end usually to make it safe)
 meta_dis_raw <- c("jmmi_date","aor","governorate_name","governorate_id","district_name","district_id")
 meta_dis_final <- c("date","aor","government_name","government_ID","district_name","district_ID")
-col_price_raw <- c("calc_price_bleach","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_cooking_gas","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result","n")
-col_price_final <- c("bleach","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","cooking_gas","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates","num_obs")
+col_price_raw <- c("calc_price_bleach","calc_price_wheat_flour","calc_price_rice","calc_price_beans_dry","calc_price_beans_can","calc_price_lentil","calc_price_vegetable_oil","calc_price_sugar","calc_price_salt","calc_price_potato","calc_price_cooking_gas","calc_price_onion","calc_price_petrol","calc_price_diesel","calc_price_bottled_water","calc_price_treated_water","calc_price_soap","calc_price_laundry","calc_price_sanitary","cost_cubic_meter","exchange_rate_result", "daily_wage_rate","n")
+col_price_final <- c("bleach","wheat_flour","rice","beans_dry","beans_can","lentil","vegetable_oil","sugar","salt","potato","cooking_gas","onion","petrol","diesel","bottled_water","treated_water","soap","laundry_powder","sanitary_napkins","cost_cubic_meter","exchange_rates", "daily_wage_rate", "num_obs")
 
 rename.var <- function(df){
   df <- df %>% 
